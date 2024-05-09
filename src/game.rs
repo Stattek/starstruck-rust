@@ -2,7 +2,7 @@ use std::io::stdin;
 
 use rand::random;
 
-use crate::{entities, Enemy, Entity, Player};
+use crate::{entities, Enemy, Entity, Player, Stats};
 
 pub fn game_loop(player: &Player) {
     // create the monster
@@ -36,7 +36,11 @@ pub fn game_loop(player: &Player) {
 
 fn create_new_monster() -> Enemy {
     // enemy with health between 10 and 250
-    let random_health: u32 = (random::<u32>() % 240) + 11;
+    let random_health: u32 = (random::<u32>() % 10) + 1;
 
-    Enemy::new(String::from("test_enemy"), random_health, 20, 5, 1)
+    Enemy::new(
+        String::from("test_enemy"),
+        Stats::new(random_health, 10, 10),
+        1,
+    )
 }

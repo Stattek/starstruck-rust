@@ -24,12 +24,38 @@ pub trait Entity {
     fn is_dead(&self) -> bool;
 }
 
+pub struct Stats {
+    health_stat: u32,
+    mana_stat: u32,
+    speed_stat: u32,
+}
+
+impl Stats {
+    // creates a new Stats object
+    pub fn new(health_stat: u32, mana_stat: u32, speed_stat: u32) -> Self {
+        Self {
+            health_stat,
+            mana_stat,
+            speed_stat,
+        }
+    }
+    // generates the health of the entity
+    fn generate_health(&self) -> u32 {
+        (self.health_stat as f32 * 5.5) as u32
+    }
+
+    // generates the mana of the entity
+    fn generate_mana(&self) -> u32 {
+        (self.mana_stat as f32 * 2.5) as u32
+    }
+}
+
 // struct to represent the player
 pub struct Player {
     name: String,
     health: u32,
     mana: u32,
-    speed: u32,
+    stats: Stats,
     level: u32,
     xp: u32,
 }
@@ -39,7 +65,7 @@ pub struct Enemy {
     name: String,
     health: u32,
     mana: u32,
-    speed: u32,
+    stats: Stats,
     level: u32,
 }
 
@@ -74,11 +100,11 @@ impl Entity for Player {
     }
 
     fn get_speed(&self) -> &u32 {
-        &self.speed
+        &self.stats.speed_stat
     }
 
     fn is_faster<T: Entity>(&self, entity: T) -> bool {
-        self.speed > *entity.get_speed()
+        self.stats.speed_stat > *entity.get_speed()
     }
 
     fn is_dead(&self) -> bool {
@@ -87,12 +113,12 @@ impl Entity for Player {
 }
 
 impl Player {
-    pub fn new(name: String, health: u32, mana: u32, speed: u32, level: u32, xp: u32) -> Self {
+    pub fn new(name: String, stats: Stats, level: u32, xp: u32) -> Self {
         Self {
             name,
-            health,
-            mana,
-            speed,
+            health: stats.generate_health(),
+            mana: stats.generate_mana(),
+            stats,
             level,
             xp,
         }
@@ -126,11 +152,11 @@ impl Entity for Enemy {
     }
 
     fn get_speed(&self) -> &u32 {
-        &self.speed
+        &self.stats.speed_stat
     }
 
     fn is_faster<T: Entity>(&self, entity: T) -> bool {
-        self.speed > *entity.get_speed()
+        self.stats.speed_stat > *entity.get_speed()
     }
 
     fn is_dead(&self) -> bool {
@@ -140,12 +166,12 @@ impl Entity for Enemy {
 
 impl Enemy {
     // create new enemy
-    pub fn new(name: String, health: u32, mana: u32, speed: u32, level: u32) -> Self {
+    pub fn new(name: String, stats: Stats, level: u32) -> Self {
         Self {
             name,
-            health,
-            mana,
-            speed,
+            health: stats.generate_health(),
+            mana: stats.generate_mana(),
+            stats,
             level,
         }
     }
