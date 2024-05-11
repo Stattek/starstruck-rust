@@ -7,8 +7,8 @@ use game::game_loop;
 fn main() {
     println!("Starstruck is back once again.");
 
-    let player = Player::new("test".to_string(), Stats::new(10, 10, 10), 1, 0);
+    let mut player = Player::new("test".to_string(), Stats::new(10, 10, 10), 1, 0, false);
 
     // play the game
-    game_loop(&player);
+    game_loop(&mut player);
 }

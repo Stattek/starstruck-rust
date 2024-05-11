@@ -19,9 +19,11 @@ pub trait Entity {
     fn get_speed(&self) -> &u32;
 
     // see if this entity is faster than the other
-    fn is_faster<T: Entity>(&self, entity: T) -> bool;
+    fn is_faster<T: Entity>(&self, the_entity: &T) -> bool;
 
     fn is_dead(&self) -> bool;
+
+    fn gone_this_turn(&self) -> bool;
 }
 
 pub struct Stats {
@@ -58,6 +60,8 @@ pub struct Player {
     stats: Stats,
     level: u32,
     xp: u32,
+    xp_to_next_level: u32,
+    has_gone: bool,
 }
 
 // struct to represent enemies
@@ -67,6 +71,7 @@ pub struct Enemy {
     mana: u32,
     stats: Stats,
     level: u32,
+    has_gone: bool,
 }
 
 // entity implementation for player
@@ -103,17 +108,20 @@ impl Entity for Player {
         &self.stats.speed_stat
     }
 
-    fn is_faster<T: Entity>(&self, entity: T) -> bool {
-        self.stats.speed_stat > *entity.get_speed()
+    fn is_faster<T: Entity>(&self, the_entity: &T) -> bool {
+        self.stats.speed_stat > *the_entity.get_speed()
     }
 
     fn is_dead(&self) -> bool {
         self.health == 0
     }
+    fn gone_this_turn(&self) -> bool {
+        self.has_gone
+    }
 }
 
 impl Player {
-    pub fn new(name: String, stats: Stats, level: u32, xp: u32) -> Self {
+    pub fn new(name: String, stats: Stats, level: u32, xp: u32, has_gone: bool) -> Self {
         Self {
             name,
             health: stats.generate_health(),
@@ -121,6 +129,8 @@ impl Player {
             stats,
             level,
             xp,
+            xp_to_next_level: level * 10,
+            has_gone,
         }
     }
 }
@@ -155,24 +165,29 @@ impl Entity for Enemy {
         &self.stats.speed_stat
     }
 
-    fn is_faster<T: Entity>(&self, entity: T) -> bool {
-        self.stats.speed_stat > *entity.get_speed()
+    fn is_faster<T: Entity>(&self, the_entity: &T) -> bool {
+        self.stats.speed_stat > *the_entity.get_speed()
     }
 
     fn is_dead(&self) -> bool {
         self.health == 0
     }
+
+    fn gone_this_turn(&self) -> bool {
+        self.has_gone
+    }
 }
 
 impl Enemy {
     // create new enemy
-    pub fn new(name: String, stats: Stats, level: u32) -> Self {
+    pub fn new(name: String, stats: Stats, level: u32, has_gone: bool) -> Self {
         Self {
             name,
             health: stats.generate_health(),
             mana: stats.generate_mana(),
             stats,
             level,
+            has_gone,
         }
     }
 
