@@ -26,9 +26,6 @@ pub trait Entity {
     /// get the speed of the entity
     fn get_speed(&self) -> &u32;
 
-    /// see if this entity is faster than the other
-    fn is_faster<T: Entity>(&self, the_entity: &T) -> bool;
-
     /// checks to see if this entity is dead
     fn is_dead(&self) -> bool;
 
@@ -132,11 +129,6 @@ impl Entity for Player {
         &self.stats.speed_stat
     }
 
-    ///Checks to see if the Player is faster than another Entity
-    fn is_faster<T: Entity>(&self, the_entity: &T) -> bool {
-        self.stats.speed_stat > *the_entity.get_speed()
-    }
-
     ///Checks to see if the Player is dead
     fn is_dead(&self) -> bool {
         self.health == 0
@@ -204,11 +196,6 @@ impl Entity for Enemy {
     ///Gets the speed of the Enemy
     fn get_speed(&self) -> &u32 {
         &self.stats.speed_stat
-    }
-
-    ///Checks to see if the Enemy is faster than another Entity
-    fn is_faster<T: Entity>(&self, the_entity: &T) -> bool {
-        self.stats.speed_stat > *the_entity.get_speed()
     }
 
     ///Checks to see if the Enemy is dead
