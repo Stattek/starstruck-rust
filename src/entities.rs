@@ -1,4 +1,4 @@
-///Represents the type of move that an entity is making
+/// Represents the type of move that an entity is making
 pub enum Move {
     AttackMove,
     DefendMove,
@@ -24,7 +24,7 @@ pub trait Entity {
     fn gain_xp(&mut self, _amount: u32) {}
 
     /// get the speed of the entity
-    fn get_speed(&self) -> &u32;
+    fn get_speed(&self) -> u32;
 
     /// checks to see if this entity is dead
     fn is_dead(&self) -> bool;
@@ -125,8 +125,8 @@ impl Entity for Player {
     }
 
     ///Gets the speed of the Player
-    fn get_speed(&self) -> &u32 {
-        &self.stats.speed_stat
+    fn get_speed(&self) -> u32 {
+        self.stats.speed_stat
     }
 
     ///Checks to see if the Player is dead
@@ -194,8 +194,8 @@ impl Entity for Enemy {
     }
 
     ///Gets the speed of the Enemy
-    fn get_speed(&self) -> &u32 {
-        &self.stats.speed_stat
+    fn get_speed(&self) -> u32 {
+        self.stats.speed_stat
     }
 
     ///Checks to see if the Enemy is dead
