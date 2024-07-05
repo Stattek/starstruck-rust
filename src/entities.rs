@@ -1,13 +1,16 @@
+use std::io;
+
 /// Represents the type of move that an entity is making
 pub enum Move {
     AttackMove,
-    DefendMove,
     MagicMove,
+    DefendMove,
 }
 
-pub trait Entity {
-    //!trait for entities
+const MAX_NUM_MOVES: u32 = 3;
 
+///trait for entities
+pub trait Entity {
     // prints the entity's name
     fn print_name(&self);
 
@@ -20,11 +23,8 @@ pub trait Entity {
     ///uses mana
     fn use_mana(&mut self, amount: u32);
 
-    /// gain xp - not every entity will be able to
-    fn gain_xp(&mut self, _amount: u32) {}
-
     /// get the speed of the entity
-    fn get_speed(&self) -> u32;
+    fn speed(&self) -> u32;
 
     /// checks to see if this entity is dead
     fn is_dead(&self) -> bool;
@@ -33,7 +33,7 @@ pub trait Entity {
     fn gone_this_turn(&self) -> bool;
 
     ///Makes this Entity do its turn and make a choice
-    fn do_turn(&mut self) -> Option<Move>;
+    fn get_turn_type(&mut self) -> Option<Move>;
 }
 
 pub struct Stats {
@@ -63,9 +63,8 @@ impl Stats {
     }
 }
 
-/**Struct to represent the Player.
- * Implements the Entity trait
- */
+///Struct to represent the Player.
+///Implements the Entity trait
 pub struct Player {
     name: String,
     health: u32,
@@ -77,9 +76,8 @@ pub struct Player {
     has_gone: bool,
 }
 
-/**Struct to represent an enemy.
- * Implements the Entity trait.
-*/
+///Struct to represent an enemy.
+///Implements the Entity trait.
 pub struct Enemy {
     name: String,
     health: u32,
@@ -119,13 +117,8 @@ impl Entity for Player {
         }
     }
 
-    ///Makes the Player gain xp
-    fn gain_xp(&mut self, amount: u32) {
-        self.xp += amount;
-    }
-
     ///Gets the speed of the Player
-    fn get_speed(&self) -> u32 {
+    fn speed(&self) -> u32 {
         self.stats.speed_stat
     }
 
@@ -139,13 +132,30 @@ impl Entity for Player {
         self.has_gone
     }
 
-    /**Simply changes the boolean value that this Player has gone.
-    Logic for turns should be elsewhere.
-    */
-    fn do_turn(&mut self) -> Option<Move> {
+    ///Player chooses attack type, and it is returned
+    fn get_turn_type(&mut self) -> Option<Move> {
         self.has_gone = true;
 
-        None
+        let mut choice = -1;
+        while choice < 0 || choice > (MAX_NUM_MOVES as i32) {
+            println!("Choose an attack type:\n\t1. Attack\n\t2. Magic\n\t3. Defend");
+
+            //take user input
+            let mut user_input = String::new();
+            io::stdin().read_line(&mut user_input).unwrap();
+            user_input = String::from(user_input.trim());
+
+            //gives back -1 if the input is incorrect
+            choice = user_input.parse::<i32>().unwrap_or(-1);
+        }
+
+        // return the correct type
+        match choice {
+            1 => Some(Move::AttackMove),
+            2 => Some(Move::MagicMove),
+            3 => Some(Move::DefendMove),
+            _ => None,
+        }
     }
 }
 
@@ -161,6 +171,11 @@ impl Player {
             xp_to_next_level: level * 10,
             has_gone,
         }
+    }
+
+    ///Makes the Player gain xp
+    fn gain_xp(&mut self, amount: u32) {
+        self.xp += amount;
     }
 }
 
@@ -194,7 +209,7 @@ impl Entity for Enemy {
     }
 
     ///Gets the speed of the Enemy
-    fn get_speed(&self) -> u32 {
+    fn speed(&self) -> u32 {
         self.stats.speed_stat
     }
 
@@ -209,7 +224,7 @@ impl Entity for Enemy {
     }
 
     ///The Enemy makes a choice as to what type of move it wants to do this turn
-    fn do_turn(&mut self) -> Option<Move> {
+    fn get_turn_type(&mut self) -> Option<Move> {
         Some(Move::AttackMove)
     }
 }
