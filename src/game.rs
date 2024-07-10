@@ -4,7 +4,8 @@ use std::io::stdin;
 
 use rand::random;
 
-use crate::{entities, Enemy, Entity, Player, Stats};
+use crate::Move;
+use crate::{Enemy, Entity, Player, Stats};
 
 /// Enumeration to hold the type of entity something is
 pub enum EntityType {
@@ -60,7 +61,7 @@ impl GameState {
     fn do_turns_in_order(&mut self) {
         if self.player.speed() >= self.enemy.speed() {
             // prefer player if speeds are equal
-            self.player.get_turn_type();
+            self.do_player_turn();
             self.enemy.get_turn_type();
         } else {
             // enemy is faster
@@ -69,7 +70,19 @@ impl GameState {
         }
     }
 
-    fn attack_entity(from_entity: &mut EntityType, victim_entity: &mut EntityType) {}
+    fn do_player_turn(&mut self) {
+        // get the turn type
+        if let Some(turn_type) = self.player.get_turn_type() {
+            // now act upon this turn type
+            match turn_type {
+                Move::AttackMove => {
+                    attack_entity(&mut self.player, &mut self.enemy);
+                }
+                Move::MagicMove => {}
+                Move::DefendMove => {}
+            }
+        }
+    }
 
     /// Checks if entities are dead and creates
     /// new random enemies if they die.
@@ -95,4 +108,20 @@ fn create_random_monster() -> Enemy {
         1,
         false,
     )
+}
+
+/// TODO: Makes one entity attack the other.
+///
+/// TODO: Is it good practice to keep these out here? It is hidden from outside unless I make it public.
+/// Maybe I should just do this and program it like it's C instead of C++. This is a lot easier and makes more sense to me now.
+///
+/// # Params
+/// - `from_entity` - The entity to do the attack
+/// - `victim_entity` - The entity to be attacked
+fn attack_entity(from_entity: &mut dyn Entity, victim_entity: &mut dyn Entity) {
+    // TODO: find out from_entity's strength and scale
+
+    let random_attack_dmg = (random::<u32>() % 10) + 1;
+    victim_entity.take_damage(random_attack_dmg);
+    println!("Did {} damage!", random_attack_dmg);
 }
