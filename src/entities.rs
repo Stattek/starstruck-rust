@@ -1,3 +1,4 @@
+use rand::random;
 use std::io;
 
 /// Represents the type of move that an entity is making
@@ -34,32 +35,42 @@ pub trait Entity {
 
     ///Makes this Entity do its turn and make a choice
     fn get_turn_type(&mut self) -> Option<Move>;
+
+    fn get_random_attack_dmg(&self) -> u32;
 }
 
 pub struct Stats {
-    health_stat: u32,
-    mana_stat: u32,
-    speed_stat: u32,
+    health: u32,
+    mana: u32,
+    speed: u32,
+    strength: u32,
 }
 
 impl Stats {
     ///creates a new Stats object
-    pub fn new(health_stat: u32, mana_stat: u32, speed_stat: u32) -> Self {
+    pub fn new(health: u32, mana: u32, speed: u32, strength: u32) -> Self {
         Self {
-            health_stat,
-            mana_stat,
-            speed_stat,
+            health,
+            mana,
+            speed,
+            strength,
         }
     }
 
     ///generates the health of the entity
     fn generate_health(&self) -> u32 {
-        (self.health_stat as f32 * 5.5) as u32
+        // TODO: change this
+        (self.health as f32 * 5.5) as u32
     }
 
     ///generates the mana of the entity
     fn generate_mana(&self) -> u32 {
-        (self.mana_stat as f32 * 2.5) as u32
+        // TODO: change this
+        (self.mana as f32 * 2.5) as u32
+    }
+
+    fn generate_random_attack_dmg(&self) -> u32 {
+        ((random::<u32>() % 10) + 1) * self.strength
     }
 }
 
@@ -119,7 +130,7 @@ impl Entity for Player {
 
     ///Gets the speed of the Player
     fn speed(&self) -> u32 {
-        self.stats.speed_stat
+        self.stats.speed
     }
 
     ///Checks to see if the Player is dead
@@ -156,6 +167,10 @@ impl Entity for Player {
             3 => Some(Move::DefendMove),
             _ => None,
         }
+    }
+
+    fn get_random_attack_dmg(&self) -> u32 {
+        self.stats.generate_random_attack_dmg()
     }
 }
 
@@ -210,7 +225,7 @@ impl Entity for Enemy {
 
     ///Gets the speed of the Enemy
     fn speed(&self) -> u32 {
-        self.stats.speed_stat
+        self.stats.speed
     }
 
     ///Checks to see if the Enemy is dead
@@ -226,6 +241,10 @@ impl Entity for Enemy {
     ///The Enemy makes a choice as to what type of move it wants to do this turn
     fn get_turn_type(&mut self) -> Option<Move> {
         Some(Move::AttackMove)
+    }
+
+    fn get_random_attack_dmg(&self) -> u32 {
+        self.stats.generate_random_attack_dmg()
     }
 }
 

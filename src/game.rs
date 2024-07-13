@@ -49,8 +49,6 @@ impl GameState {
         loop {
             // each loop through here is a full turn
             self.do_turns_in_order();
-
-            self.check_entities();
         }
     }
 
@@ -62,12 +60,18 @@ impl GameState {
         if self.player.speed() >= self.enemy.speed() {
             // prefer player if speeds are equal
             self.do_player_turn();
+
+            self.check_entities();
             self.enemy.get_turn_type();
         } else {
             // enemy is faster
             self.enemy.get_turn_type();
+            
+            self.check_entities();
             self.player.get_turn_type();
         }
+
+        self.check_entities();
     }
 
     fn do_player_turn(&mut self) {
@@ -104,7 +108,7 @@ fn create_random_monster() -> Enemy {
 
     Enemy::new(
         String::from("test_enemy"),
-        Stats::new(random_health_stat, 10, 10),
+        Stats::new(random_health_stat, 10, 10, 10),
         1,
         false,
     )
@@ -120,8 +124,8 @@ fn create_random_monster() -> Enemy {
 /// - `victim_entity` - The entity to be attacked
 fn attack_entity(from_entity: &mut dyn Entity, victim_entity: &mut dyn Entity) {
     // TODO: find out from_entity's strength and scale
+    let random_attack_dmg = from_entity.get_random_attack_dmg();
 
-    let random_attack_dmg = (random::<u32>() % 10) + 1;
     victim_entity.take_damage(random_attack_dmg);
     println!("Did {} damage!", random_attack_dmg);
 }
