@@ -7,12 +7,6 @@ use rand::random;
 use crate::Move;
 use crate::{Enemy, Entity, Player, Stats};
 
-/// Enumeration to hold the type of entity something is
-pub enum EntityType {
-    PlayerType(Player),
-    EnemyType(Enemy),
-}
-
 ///Struct to hold the game state.
 pub struct GameState {
     player: Player,
@@ -59,6 +53,7 @@ impl GameState {
     fn do_turns_in_order(&mut self) {
         if self.player.speed() >= self.enemy.speed() {
             // prefer player if speeds are equal
+            self.enemy.print_info();
             self.do_player_turn();
 
             self.check_entities();
@@ -66,7 +61,7 @@ impl GameState {
         } else {
             // enemy is faster
             self.enemy.get_turn_type();
-            
+
             self.check_entities();
             self.player.get_turn_type();
         }
@@ -94,8 +89,10 @@ impl GameState {
     /// If the player dies, the game is over.
     fn check_entities(&mut self) {
         if self.player.is_dead() {
+            println!("You died!");
             self.is_playing = false;
         } else if self.enemy.is_dead() {
+            println!("The enemy died!");
             self.enemy = create_random_monster();
         }
     }
