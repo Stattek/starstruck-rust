@@ -1,11 +1,12 @@
-// simple turn-based game logic
+//simple turn-based game logic
 
 use std::io::stdin;
 
 use rand::random;
 
-use crate::Move;
-use crate::{Enemy, Entity, Player, Stats};
+use crate::entity_components::enemy::Enemy;
+use crate::entity_components::entity::MoveType;
+use crate::{Entity, Player, Stats};
 
 ///Struct to hold the game state.
 pub struct GameState {
@@ -21,10 +22,10 @@ impl GameState {
         let the_enemy;
 
         if let Some(temp_enemy) = enemy {
-            // if we were given an enemy, use this
+            //if we were given an enemy, use this
             the_enemy = temp_enemy;
         } else {
-            // otherwise, create a new random one
+            //otherwise, create a new random one
             the_enemy = create_random_monster();
         }
 
@@ -37,11 +38,11 @@ impl GameState {
 
     ///the main game loop
     pub fn game_loop(&mut self) {
-        // create a new random monster for now
+        //create a new random monster for now
         self.enemy = create_random_monster();
 
         loop {
-            // each loop through here is a full turn
+            //each loop through here is a full turn
             self.do_turns_in_order();
         }
     }
@@ -52,14 +53,16 @@ impl GameState {
     ///and a `u32` for the index into the entity `Vec`
     fn do_turns_in_order(&mut self) {
         if self.player.speed() >= self.enemy.speed() {
-            // prefer player if speeds are equal
+            //prefer player if speeds are equal
             self.enemy.print_info();
+            //FIXME: print the player info when it needs to be done
+            self.player.print_info();
             self.do_player_turn();
 
             self.check_entities();
             self.enemy.get_turn_type();
         } else {
-            // enemy is faster
+            //enemy is faster
             self.enemy.get_turn_type();
 
             self.check_entities();
@@ -70,23 +73,24 @@ impl GameState {
     }
 
     fn do_player_turn(&mut self) {
-        // get the turn type
+        //get the turn type
         if let Some(turn_type) = self.player.get_turn_type() {
-            // now act upon this turn type
+            //now act upon this turn type
             match turn_type {
-                Move::AttackMove => {
+                MoveType::AttackMove => {
                     attack_entity(&mut self.player, &mut self.enemy);
                 }
-                Move::MagicMove => {}
-                Move::DefendMove => {}
+                MoveType::MagicMove => {}
+                MoveType::DefendMove => {}
+                _ => {} //We should never reach this
             }
         }
     }
 
-    /// Checks if entities are dead and creates
-    /// new random enemies if they die.
+    ///Checks if entities are dead and creates
+    ///new random enemies if they die.
     ///
-    /// If the player dies, the game is over.
+    ///If the player dies, the game is over.
     fn check_entities(&mut self) {
         if self.player.is_dead() {
             println!("You died!");
@@ -111,16 +115,16 @@ fn create_random_monster() -> Enemy {
     )
 }
 
-/// TODO: Makes one entity attack the other.
+///TODO: Makes one entity attack the other.
 ///
-/// TODO: Is it good practice to keep these out here? It is hidden from outside unless I make it public.
-/// Maybe I should just do this and program it like it's C instead of C++. This is a lot easier and makes more sense to me now.
+///TODO: Is it good practice to keep these out here? It is hidden from outside unless I make it public.
+///Maybe I should just do this and program it like it's C instead of C++. This is a lot easier and makes more sense to me now.
 ///
-/// # Params
-/// - `from_entity` - The entity to do the attack
-/// - `victim_entity` - The entity to be attacked
+///# Params
+///- `from_entity` - The entity to do the attack
+///- `victim_entity` - The entity to be attacked
 fn attack_entity(from_entity: &mut dyn Entity, victim_entity: &mut dyn Entity) {
-    // TODO: find out from_entity's strength and scale
+    //TODO: find out from_entity's strength and scale
     let random_attack_dmg = from_entity.get_random_attack_dmg();
 
     victim_entity.take_damage(random_attack_dmg);
