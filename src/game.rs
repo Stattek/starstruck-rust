@@ -43,7 +43,7 @@ impl GameState {
         //create a new random monster for now
         self.enemy = create_random_monster();
 
-        loop {
+        while self.is_playing {
             //each loop through here is a full turn
             self.do_turns_in_order();
         }
@@ -56,23 +56,35 @@ impl GameState {
     fn do_turns_in_order(&mut self) {
         if self.player.speed() >= self.enemy.speed() {
             //prefer player if speeds are equal
+
+            // print info
             println!(); // make a new line now
             self.player.print_info();
             self.enemy.print_info();
-            //FIXME: print the player info when it needs to be done
+
+            // do turns
             self.do_player_turn();
 
-            self.check_entities();
-            self.enemy.get_turn_type();
+            // check entities before next turn is done
+            if !self.check_entities() {
+                self.do_enemy_turn();
+            }
         } else {
-            //enemy is faster
-            println!(); //make new line
-            self.enemy.get_turn_type();
+            // enemy is faster
 
-            self.check_entities();
-            self.player.print_info();
-            self.enemy.print_info();
-            self.player.get_turn_type();
+            // do enemy turn
+            self.do_enemy_turn();
+
+            // check entities before doing the next turn
+            if !self.check_entities() {
+                // print info
+                println!(); //make new line
+                self.player.print_info();
+                self.enemy.print_info();
+
+                // player turn
+                self.player.get_turn_type();
+            }
         }
 
         self.check_entities();
@@ -86,9 +98,25 @@ impl GameState {
                 MoveType::AttackMove => {
                     attack_entity(&mut self.player, &mut self.enemy);
                 }
+
                 MoveType::MagicMove => {}
                 MoveType::DefendMove => {}
                 _ => {} //We should never reach this
+            }
+        }
+    }
+
+    fn do_enemy_turn(&mut self) {
+        //get the turn type
+        if let Some(turn_type) = self.enemy.get_turn_type() {
+            match turn_type {
+                MoveType::AttackMove => {
+                    attack_entity(&mut self.enemy, &mut self.player);
+                }
+
+                MoveType::MagicMove => {}
+                MoveType::DefendMove => {}
+                _ => {} // We should never reach this
             }
         }
     }
@@ -97,14 +125,26 @@ impl GameState {
     ///new random enemies if they die.
     ///
     ///If the player dies, the game is over.
-    fn check_entities(&mut self) {
+    /// # Returns
+    /// True if an entity died, false otherwise.
+    fn check_entities(&mut self) -> bool {
+        let mut output = false;
+
         if self.player.is_dead() {
             println!("{}", "\nYou died!".red().bold());
             self.is_playing = false;
+
+            // entity died
+            output = true;
         } else if self.enemy.is_dead() {
             println!("{}", "\nThe enemy died!".green());
             self.enemy = create_random_monster();
+
+            //entity died
+            output = true;
         }
+
+        output
     }
 }
 
@@ -135,7 +175,7 @@ fn attack_entity(from_entity: &mut dyn Entity, victim_entity: &mut dyn Entity) {
 
     victim_entity.take_damage(random_attack_dmg);
 
-    // cursed string creation to colorize this string when we print it out
+    // cursed string creation to colorize this string when we print it out 💀
     let mut output_str = String::new();
     output_str.push_str(from_entity.name().as_str());
     output_str.push_str(" did ");
