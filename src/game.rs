@@ -1,7 +1,9 @@
 //simple turn-based game logic
 
+use std::char::from_u32_unchecked;
 use std::io::stdin;
 
+use colored::Colorize;
 use rand::random;
 
 use crate::entity_components::enemy::Enemy;
@@ -54,18 +56,22 @@ impl GameState {
     fn do_turns_in_order(&mut self) {
         if self.player.speed() >= self.enemy.speed() {
             //prefer player if speeds are equal
+            println!(); // make a new line now
+            self.player.print_info();
             self.enemy.print_info();
             //FIXME: print the player info when it needs to be done
-            self.player.print_info();
             self.do_player_turn();
 
             self.check_entities();
             self.enemy.get_turn_type();
         } else {
             //enemy is faster
+            println!(); //make new line
             self.enemy.get_turn_type();
 
             self.check_entities();
+            self.player.print_info();
+            self.enemy.print_info();
             self.player.get_turn_type();
         }
 
@@ -93,10 +99,10 @@ impl GameState {
     ///If the player dies, the game is over.
     fn check_entities(&mut self) {
         if self.player.is_dead() {
-            println!("You died!");
+            println!("{}", "\nYou died!".red().bold());
             self.is_playing = false;
         } else if self.enemy.is_dead() {
-            println!("The enemy died!");
+            println!("{}", "\nThe enemy died!".green());
             self.enemy = create_random_monster();
         }
     }
@@ -128,5 +134,14 @@ fn attack_entity(from_entity: &mut dyn Entity, victim_entity: &mut dyn Entity) {
     let random_attack_dmg = from_entity.get_random_attack_dmg();
 
     victim_entity.take_damage(random_attack_dmg);
-    println!("Did {} damage!", random_attack_dmg);
+
+    // cursed string creation to colorize this string when we print it out
+    let mut output_str = String::new();
+    output_str.push_str(from_entity.name().as_str());
+    output_str.push_str(" did ");
+    output_str.push_str(random_attack_dmg.to_string().as_str());
+    output_str.push_str(" damage to ");
+    output_str.push_str(victim_entity.name().as_str());
+
+    println!("{}", output_str.red());
 }

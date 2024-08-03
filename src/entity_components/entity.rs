@@ -23,6 +23,8 @@ pub trait Entity {
     ///Get the speed of the entity
     fn speed(&self) -> u32;
 
+    fn name(&self) -> String;
+
     ///Checks to see if this entity is dead
     fn is_dead(&self) -> bool;
 

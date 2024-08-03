@@ -1,5 +1,6 @@
 //FIXME: fix private methods/members
 use crate::entity_components::{entity::Entity, entity::MoveType, stats::Stats};
+use colored::Colorize;
 
 ///Struct to represent an enemy.
 ///Implements the Entity trait.
@@ -71,6 +72,7 @@ impl Entity for Enemy {
     }
 
     ///The Enemy makes a choice as to what type of move it wants to do this turn
+    /// FUTURE: implement AI for this
     fn get_turn_type(&mut self) -> Option<MoveType> {
         Some(MoveType::AttackMove)
     }
@@ -81,6 +83,10 @@ impl Entity for Enemy {
 
     ///Print the Enemy info
     fn print_info(&self) {
-        println!("{}:\n\tHealth:{}", self.name, self.health);
+        println!("{}:\n\t{}{}", self.name, "Health: ".green(), self.health);
+    }
+
+    fn name(&self) -> String {
+        self.name.clone()
     }
 }
