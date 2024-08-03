@@ -1,5 +1,6 @@
 //FIXME: fix the private methods and members
-use crate::entity_components::entity::{Entity, MoveType};
+use crate::entity_components::entity::Entity;
+use crate::entity_components::moves::MoveType;
 use crate::entity_components::stats::Stats;
 use colored::Colorize;
 use std::io;

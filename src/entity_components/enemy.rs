@@ -1,5 +1,5 @@
 //FIXME: fix private methods/members
-use crate::entity_components::{entity::Entity, entity::MoveType, stats::Stats};
+use crate::entity_components::{entity::Entity, moves::MoveType, stats::Stats};
 use colored::Colorize;
 
 ///Struct to represent an enemy.
