@@ -1,6 +1,7 @@
 //FIXME: fix the private methods and members
 use crate::entity_components::entity::{Entity, MoveType};
 use crate::entity_components::stats::Stats;
+use colored::Colorize;
 use std::io;
 
 ///Struct to represent the Player.
@@ -82,13 +83,18 @@ impl Entity for Player {
         self.has_gone
     }
 
-    ///Player chooses attack type, and it is returned
+    ///Player chooses attack type, and it is returned.
     fn get_turn_type(&mut self) -> Option<MoveType> {
         self.has_gone = true;
 
         let mut choice = -1;
         while choice < 0 || choice > (MoveType::NumMoveTypes as i32) {
-            println!("Choose an attack type:\n\t1. Attack\n\t2. Magic\n\t3. Defend");
+            println!(
+                "What do you want to do?\n\t1. {}\n\t2. {}\n\t3. {}",
+                "Attack".red(),
+                "Magic".blue(),
+                "Defend".white()
+            );
 
             //take user input
             let mut user_input = String::new();
@@ -114,6 +120,10 @@ impl Entity for Player {
 
     ///Print the Player info
     fn print_info(&self) {
-        println!("{}:\n\tHealth:{}", self.name, self.health);
+        println!("{}:\n\t{}{}", self.name, "Health:".green(), self.health);
+    }
+
+    fn name(&self) -> String {
+        self.name.clone()
     }
 }

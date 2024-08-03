@@ -33,7 +33,10 @@ impl Stats {
 
     ///Generates random attack damage based on stats
     pub fn generate_random_attack_dmg(&self) -> u32 {
-        ((random::<u32>() % 10) + 1) * self.strength
+        // TODO: random crits?
+
+        // strength + (random number between 0 and strength/2)
+        self.strength + (random::<u32>() % (self.strength / 2))
     }
 
     pub fn get_speed(&self) -> u32 {
