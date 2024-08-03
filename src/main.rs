@@ -1,7 +1,6 @@
 //create modules
 mod entity_components;
 mod game;
-mod moves;
 
 //imports
 use colored::Colorize;

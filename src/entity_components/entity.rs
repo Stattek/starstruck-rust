@@ -1,10 +1,5 @@
 ///Represents the type of move that an entity is making
-pub enum MoveType {
-    AttackMove,
-    MagicMove,
-    DefendMove,
-    NumMoveTypes, //THIS SHOULD BE THE LAST VALUE IN THIS ENUM
-}
+use crate::entity_components::moves::MoveType;
 
 ///trait for entities
 pub trait Entity {

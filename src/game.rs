@@ -7,7 +7,7 @@ use colored::Colorize;
 use rand::random;
 
 use crate::entity_components::enemy::Enemy;
-use crate::entity_components::entity::MoveType;
+use crate::entity_components::moves::MoveType;
 use crate::{Entity, Player, Stats};
 
 ///Struct to hold the game state.
