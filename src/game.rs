@@ -96,7 +96,13 @@ impl GameState {
             //now act upon this turn type
             match turn_type {
                 MoveType::AttackMove => {
-                    attack_entity(&mut self.player, &mut self.enemy);
+                    // attack the enemy with a random amount of damage
+                    let random_damage = self.player.get_random_attack_dmg();
+                    
+                    // display the attack text to screen
+                    self.display_attack_text(self.player.name(), self.enemy.name(), random_damage);
+                    
+                    self.player.attack_entity(random_damage, &mut self.enemy);
                 }
 
                 MoveType::MagicMove => {}
@@ -111,7 +117,12 @@ impl GameState {
         if let Some(turn_type) = self.enemy.get_turn_type() {
             match turn_type {
                 MoveType::AttackMove => {
-                    attack_entity(&mut self.enemy, &mut self.player);
+                    // attack the player with a random amount of damage
+                    let random_damage = self.enemy.get_random_attack_dmg();
+
+                    // display the text for an attack
+                    self.display_attack_text(self.enemy.name(), self.player.name(), random_damage);
+                    self.enemy.attack_entity(random_damage, &mut self.player);
                 }
 
                 MoveType::MagicMove => {}
@@ -119,6 +130,20 @@ impl GameState {
                 _ => {} // We should never reach this
             }
         }
+    }
+
+    /// Displays text when an entity attacks another.
+    fn display_attack_text(&self, from_entity_name: String, victim_entity_name: String, damage_dealt: u32) {
+        // TODO: display text for this
+        // cursed string creation to colorize this string when we print it out 💀
+        let mut output_str = String::new();
+        output_str.push_str(from_entity_name.as_str());
+        output_str.push_str(" did ");
+        output_str.push_str(damage_dealt.to_string().as_str());
+        output_str.push_str(" damage to ");
+        output_str.push_str(victim_entity_name.as_str());
+
+        println!("{}", output_str.red());
     }
 
     ///Checks if entities are dead and creates
@@ -155,7 +180,7 @@ fn create_random_monster() -> Enemy {
 
     Enemy::new(
         String::from("test_enemy"),
-        Stats::new(random_health_stat, 10, 10, 10),
+        Stats::new(random_health_stat, 10, 10, 10, 0),
         1,
         false,
     )

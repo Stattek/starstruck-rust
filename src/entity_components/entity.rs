@@ -34,4 +34,12 @@ pub trait Entity {
 
     ///Print the Entity info
     fn print_info(&self);
+
+    ///Makes this `Entity` attack another `Entity`.
+    ///# Parameters
+    /// - `amount` - The amount of damage the enemy will take
+    /// - `entity` - The entity to take damage
+    fn attack_entity(&self, amount: u32, entity: &mut dyn Entity) {
+        entity.take_damage(amount);
+    }
 }

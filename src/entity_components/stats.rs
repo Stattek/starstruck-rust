@@ -6,16 +6,18 @@ pub struct Stats {
     mana: u32,
     speed: u32,
     strength: u32,
+    defense: u32,
 }
 
 impl Stats {
     ///Creates a new Stats object
-    pub fn new(health: u32, mana: u32, speed: u32, strength: u32) -> Self {
+    pub fn new(health: u32, mana: u32, speed: u32, strength: u32, defense: u32) -> Self {
         Self {
             health,
             mana,
             speed,
             strength,
+            defense,
         }
     }
 
