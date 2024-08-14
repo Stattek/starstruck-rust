@@ -1,4 +1,3 @@
-//FIXME: fix the private methods and members
 use crate::entity_components::entity::Entity;
 use crate::entity_components::moves::MoveType;
 use crate::entity_components::stats::Stats;
@@ -22,7 +21,6 @@ impl Player {
     pub fn new(name: String, stats: Stats, level: u32, xp: u32, has_gone: bool) -> Self {
         Self {
             name,
-            //FIXME: private method, change this to be public maybe
             health: stats.calculate_max_health(),
             mana: stats.calculate_max_mana(),
             stats,

@@ -1,4 +1,3 @@
-//FIXME: fix private methods/members
 use crate::entity_components::{entity::Entity, moves::MoveType, stats::Stats};
 use colored::Colorize;
 
