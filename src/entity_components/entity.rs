@@ -7,7 +7,13 @@ pub trait Entity {
     fn print_name(&self);
 
     ///Entity takes damage
-    fn take_damage(&mut self, amount: u32);
+    ///
+    /// # Params
+    /// - `amount` - The amount of damage the entity is going to take
+    ///
+    /// # Returns
+    /// - The amount of damage the entity actually took from the attack, such as when an entity takes less damage due to defense.
+    fn take_damage(&mut self, amount: u32) -> u32;
 
     ///Entity heals
     fn heal(&mut self, amount: u32);
@@ -30,6 +36,12 @@ pub trait Entity {
     /// - The name of this entity
     fn name(&self) -> String;
 
+    /// Get the magic strength of the entity
+    ///
+    /// # Returns
+    /// - The magic strength of this entity
+    fn magic_strength(&self) -> u32;
+
     ///Checks to see if this entity is dead
     fn is_dead(&self) -> bool;
 
@@ -46,12 +58,19 @@ pub trait Entity {
     fn print_info(&self);
 
     ///Makes this `Entity` attack another `Entity`.
-    /// 
+    ///
     ///# Params
-    /// 
+    ///
     /// - `amount` - The amount of damage the enemy will take
     /// - `entity` - The entity to take damage
-    fn attack_entity(&self, amount: u32, entity: &mut dyn Entity) {
-        entity.take_damage(amount);
+    ///
+    /// # Returns
+    /// - The amount of damage dealt to the enemy.
+    fn attack_entity(&self, amount: u32, entity: &mut dyn Entity) -> u32 {
+        entity.take_damage(amount)
     }
+
+    fn start_defending(&mut self);
+
+    fn stop_defending(&mut self);
 }

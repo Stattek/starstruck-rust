@@ -33,12 +33,16 @@ impl Entity for Enemy {
     }
 
     ///Make the Enemy take damage
-    fn take_damage(&mut self, amount: u32) {
-        if amount > self.health {
+    fn take_damage(&mut self, amount: u32) -> u32 {
+        let damage_taken = self.stats.calc_damage_taken(amount);
+
+        if damage_taken > self.health {
             self.health = 0;
         } else {
-            self.health -= amount;
+            self.health -= damage_taken;
         }
+
+        damage_taken
     }
 
     ///Heal the Enemy
@@ -88,8 +92,20 @@ impl Entity for Enemy {
     fn name(&self) -> String {
         self.name.clone()
     }
-    
+
     fn level(&self) -> u32 {
         self.level
+    }
+
+    fn magic_strength(&self) -> u32 {
+        self.stats.get_magic_strength()
+    }
+
+    fn start_defending(&mut self) {
+        self.stats.start_defending();
+    }
+
+    fn stop_defending(&mut self) {
+        self.stats.stop_defending()
     }
 }
