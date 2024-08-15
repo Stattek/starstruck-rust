@@ -35,6 +35,19 @@ impl Player {
     fn gain_xp(&mut self, amount: u32) {
         self.xp += amount;
     }
+
+    /// Take input from the user.
+    ///
+    /// # Returns
+    ///
+    /// - A `String` containing the trimmed input from the user.
+    pub fn get_player_input(&self) -> String {
+        let mut user_input = String::new();
+        io::stdin().read_line(&mut user_input).unwrap();
+
+        // return the user input string
+        String::from(user_input.trim())
+    }
 }
 
 //entity implementation for player
@@ -83,6 +96,8 @@ impl Entity for Player {
     }
 
     ///Player chooses attack type, and it is returned.
+    ///
+    /// # FUTURE: Move this to GameState
     fn get_turn_type(&mut self) -> Option<MoveType> {
         self.has_gone = true;
 
@@ -96,9 +111,7 @@ impl Entity for Player {
             );
 
             //take user input
-            let mut user_input = String::new();
-            io::stdin().read_line(&mut user_input).unwrap();
-            user_input = String::from(user_input.trim());
+            let user_input = self.get_player_input();
 
             //gives back -1 if the input is incorrect
             choice = user_input.parse::<i32>().unwrap_or(-1);
@@ -122,7 +135,13 @@ impl Entity for Player {
         println!("{}:\n\t{}{}", self.name, "Health:".green(), self.health);
     }
 
+    /// Get the name of the Player
     fn name(&self) -> String {
         self.name.clone()
+    }
+
+    /// Get the level of the Player
+    fn level(&self) -> u32 {
+        self.level
     }
 }

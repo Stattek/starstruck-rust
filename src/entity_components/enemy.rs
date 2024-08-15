@@ -88,4 +88,8 @@ impl Entity for Enemy {
     fn name(&self) -> String {
         self.name.clone()
     }
+    
+    fn level(&self) -> u32 {
+        self.level
+    }
 }
