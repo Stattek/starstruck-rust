@@ -72,7 +72,7 @@ impl GameState {
             // do enemy turn
             self.do_enemy_turn();
 
-            // check entities before doing the next turn
+            // check entities before doing the player's turn
             if !self.check_entities() {
                 // print info
                 println!(); //make new line
@@ -84,7 +84,20 @@ impl GameState {
             }
         }
 
+        self.check_remove_entity_statuses();
         self.check_entities();
+    }
+
+    /// Removes all status effects from entities that need to be done at the
+    /// end of a turn.
+    ///
+    /// FUTURE: add more unique statuses
+    fn check_remove_entity_statuses(&mut self) {
+        // always stop defending at the end of a turn
+        self.player.stop_defending();
+        self.enemy.stop_defending();
+
+        // TODO: remove more statuses
     }
 
     fn do_player_turn(&mut self) {
@@ -96,27 +109,58 @@ impl GameState {
                     // attack the enemy with a random amount of damage
                     let random_damage = self.player.get_random_attack_dmg();
 
-                    // display the attack text to screen
-                    self.display_attack_text(self.player.name(), self.enemy.name(), random_damage);
-
-                    self.player.attack_entity(random_damage, &mut self.enemy);
+                    let damage_dealt = self.player.attack_entity(random_damage, &mut self.enemy);
+                    // display the damage dealt
+                    self.display_attack_text(self.player.name(), self.enemy.name(), damage_dealt);
                 }
 
                 MoveType::MagicMove => {
                     let move_list = Move::get_move_list();
+                    let move_list_len = move_list.len(); // save the length to avoid borrowing moved value
 
-                    for item in move_list {
-                        if item.is_meeting_requirements(self.player.level()) {
-                            println!("{} | Cost: {}", item.name(), item.cost())
+                    // print all of the moves
+                    for index in 0..move_list_len {
+                        let cur_move = &move_list[index];
+
+                        if cur_move.is_meeting_requirements(self.player.level()) {
+                            println!("{} | Cost: {}", cur_move.name().on_blue(), cur_move.cost())
                         }
                     }
 
-                    // TODO: choose the move
+                    // choose thlet =e move
+                    let mut choice = -1;
+                    while choice <= 0 || choice > (move_list_len as i32) {
+                        println!("{}", "Choose a move:".on_white());
+
+                        //take user input
+                        let user_input = self.player.get_player_input();
+
+                        //gives back -1 if the input is incorrect
+                        choice = user_input.parse::<i32>().unwrap_or(-1);
+                    }
 
                     // TODO: attack the enemy with the move
+                    let random_damage = move_list[choice as usize]
+                        .generate_random_amount(self.player.magic_strength());
+
+                    let damage_dealt = self.player.attack_entity(random_damage, &mut self.enemy);
+                    // display the damage that was dealt
+                    self.display_attack_text(self.player.name(), self.enemy.name(), damage_dealt);
                 }
-                MoveType::DefendMove => {}
-                _ => {} // we should never reach this
+                MoveType::DefendMove => {
+                    self.player.start_defending();
+
+                    // tell player that they started defending
+                    let mut output_str = String::new();
+                    output_str.push_str(self.player.name().as_str());
+                    output_str.push_str(" began defending for 1 turn.");
+
+                    println!("{}", output_str.green());
+                }
+                _ => {
+                    // we should never reach this unless something has gone wrong
+                    panic!("Invalid move type");
+                }
             }
         }
     }
@@ -129,14 +173,17 @@ impl GameState {
                     // attack the player with a random amount of damage
                     let random_damage = self.enemy.get_random_attack_dmg();
 
+                    let damage_dealt = self.enemy.attack_entity(random_damage, &mut self.player);
                     // display the text for an attack
-                    self.display_attack_text(self.enemy.name(), self.player.name(), random_damage);
-                    self.enemy.attack_entity(random_damage, &mut self.player);
+                    self.display_attack_text(self.enemy.name(), self.player.name(), damage_dealt);
                 }
 
                 MoveType::MagicMove => {}
                 MoveType::DefendMove => {}
-                _ => {} // we should never reach this
+                _ => {
+                    // we should never reach this unless something has gone wrong
+                    panic!("Invalid move type");
+                }
             }
         }
     }
@@ -194,7 +241,7 @@ fn create_random_monster() -> Enemy {
 
     Enemy::new(
         String::from("test_enemy"),
-        Stats::new(random_health_stat, 10, 10, 10, 0),
+        Stats::new(random_health_stat, 10, 10, 10, 10, 0),
         1,
         false,
     )
