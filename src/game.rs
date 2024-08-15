@@ -1,13 +1,10 @@
 //simple turn-based game logic
 
-use std::char::from_u32_unchecked;
-use std::io::stdin;
-
 use colored::Colorize;
 use rand::random;
 
 use crate::entity_components::enemy::Enemy;
-use crate::entity_components::moves::MoveType;
+use crate::entity_components::moves::{Move, MoveType};
 use crate::{Entity, Player, Stats};
 
 ///Struct to hold the game state.
@@ -98,16 +95,28 @@ impl GameState {
                 MoveType::AttackMove => {
                     // attack the enemy with a random amount of damage
                     let random_damage = self.player.get_random_attack_dmg();
-                    
+
                     // display the attack text to screen
                     self.display_attack_text(self.player.name(), self.enemy.name(), random_damage);
-                    
+
                     self.player.attack_entity(random_damage, &mut self.enemy);
                 }
 
-                MoveType::MagicMove => {}
+                MoveType::MagicMove => {
+                    let move_list = Move::get_move_list();
+
+                    for item in move_list {
+                        if item.is_meeting_requirements(self.player.level()) {
+                            println!("{} | Cost: {}", item.name(), item.cost())
+                        }
+                    }
+
+                    // TODO: choose the move
+
+                    // TODO: attack the enemy with the move
+                }
                 MoveType::DefendMove => {}
-                _ => {} //We should never reach this
+                _ => {} // we should never reach this
             }
         }
     }
@@ -127,13 +136,18 @@ impl GameState {
 
                 MoveType::MagicMove => {}
                 MoveType::DefendMove => {}
-                _ => {} // We should never reach this
+                _ => {} // we should never reach this
             }
         }
     }
 
     /// Displays text when an entity attacks another.
-    fn display_attack_text(&self, from_entity_name: String, victim_entity_name: String, damage_dealt: u32) {
+    fn display_attack_text(
+        &self,
+        from_entity_name: String,
+        victim_entity_name: String,
+        damage_dealt: u32,
+    ) {
         // TODO: display text for this
         // cursed string creation to colorize this string when we print it out 💀
         let mut output_str = String::new();

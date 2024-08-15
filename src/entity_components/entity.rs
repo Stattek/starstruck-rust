@@ -18,6 +18,16 @@ pub trait Entity {
     ///Get the speed of the entity
     fn speed(&self) -> u32;
 
+    /// Get the level of the entity
+    ///
+    /// # Returns
+    /// - The level of this entity
+    fn level(&self) -> u32;
+
+    /// Get the name of the entity
+    ///
+    /// # Returns
+    /// - The name of this entity
     fn name(&self) -> String;
 
     ///Checks to see if this entity is dead
@@ -36,7 +46,9 @@ pub trait Entity {
     fn print_info(&self);
 
     ///Makes this `Entity` attack another `Entity`.
-    ///# Parameters
+    /// 
+    ///# Params
+    /// 
     /// - `amount` - The amount of damage the enemy will take
     /// - `entity` - The entity to take damage
     fn attack_entity(&self, amount: u32, entity: &mut dyn Entity) {
