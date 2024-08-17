@@ -1,3 +1,4 @@
+#[derive(Clone)]
 pub enum ElementType {
     Fire,
     Wind,
@@ -13,11 +14,20 @@ pub enum MoveType {
     NumMoveTypes, // This should always be the last value
 }
 
+const MOVE_LIST_LEN: u32 = 4;
+const MOVE_LIST: [Move<'_>; MOVE_LIST_LEN as usize] = [
+    Move::new("FireOne", 12, 2, 1, ElementType::Fire),
+    Move::new("WindOne", 14, 2, 3, ElementType::Wind),
+    Move::new("EarthOne", 16, 2, 5, ElementType::Earth),
+    Move::new("WaterOne", 20, 2, 6, ElementType::Water),
+];
+
 /// Struct for representing a move in the game.
 /// This could be an attacking or healing move.
 ///
 /// # FUTURE:
 /// - Create status effects like what was being worked on in the Java version.
+#[derive(Clone)]
 pub struct Move<'a> {
     name: &'a str, // specify the lifetime of this variable (still don't know why)
     base_amount: u32,
@@ -27,7 +37,7 @@ pub struct Move<'a> {
 }
 
 impl<'a> Move<'a> {
-    pub fn new(
+    pub const fn new(
         name: &'a str,
         base_amount: u32,
         mana_cost: u32,
@@ -52,20 +62,29 @@ impl<'a> Move<'a> {
     /// - The random value of healing/damage this `Move` will do.
     pub fn generate_random_amount(&self, magic_strength: u32) -> u32 {
         // magic_strength + (random number between 0 and magic_strength/2)
-        magic_strength + (rand::random::<u32>() % (magic_strength / 2))
+        magic_strength
+            + self.base_amount
+            + (rand::random::<u32>() % (magic_strength + self.base_amount / 2))
     }
 
     /// Creates and returns a `Move` list of all the moves that are in the game.
     ///
     /// # Returns
     /// - A `Vec` of all the `Move`s in the game.
-    pub fn get_move_list() -> Vec<Move<'a>> {
-        vec![
-            Move::new("FireOne", 10, 2, 1, ElementType::Fire),
-            Move::new("WindOne", 12, 2, 3, ElementType::Wind),
-            Move::new("EarthOne", 14, 2, 5, ElementType::Earth),
-            Move::new("WaterOne", 17, 2, 6, ElementType::Water),
-        ]
+    pub fn get_move_list(entity_level: u32) -> Vec<Move<'a>> {
+        let mut move_vector: Vec<Move<'a>> = Vec::new();
+
+        for i in 0..MOVE_LIST_LEN {
+            if MOVE_LIST[i as usize].is_meeting_requirements(entity_level) {
+                // push a clone of the move to the resulting list
+                move_vector.push(MOVE_LIST[i as usize].clone());
+            } else {
+                // break out of the for loop, as moves are ordered by level requirement
+                break;
+            }
+        }
+
+        move_vector
     }
 
     /// Checks that the entity with this level meets the requirements for using

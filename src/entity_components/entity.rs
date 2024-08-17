@@ -1,6 +1,8 @@
 ///Represents the type of move that an entity is making
 use crate::entity_components::moves::MoveType;
 
+use super::status::Status;
+
 ///trait for entities
 pub trait Entity {
     ///Prints the entity's name
@@ -69,6 +71,8 @@ pub trait Entity {
     fn attack_entity(&self, amount: u32, entity: &mut dyn Entity) -> u32 {
         entity.take_damage(amount)
     }
+
+    fn apply_status(&self, the_status: Status, entity: &mut dyn Entity);
 
     fn start_defending(&mut self);
 
