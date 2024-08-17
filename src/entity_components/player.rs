@@ -4,6 +4,8 @@ use crate::entity_components::stats::Stats;
 use colored::Colorize;
 use std::io;
 
+use super::status::Status;
+
 ///Struct to represent the Player.
 ///Implements the Entity trait
 pub struct Player {
@@ -15,6 +17,7 @@ pub struct Player {
     xp: u32,
     xp_to_next_level: u32,
     has_gone: bool,
+    statuses: Vec<Status>,
 }
 
 impl Player {
@@ -28,6 +31,7 @@ impl Player {
             xp,
             xp_to_next_level: level * 10,
             has_gone,
+            statuses: Vec::new(), // start with no statuses
         }
     }
 
@@ -159,5 +163,9 @@ impl Entity for Player {
 
     fn stop_defending(&mut self) {
         self.stats.stop_defending();
+    }
+
+    fn apply_status(&self, the_status: Status, entity: &mut dyn Entity) {
+        todo!() //TODO:
     }
 }

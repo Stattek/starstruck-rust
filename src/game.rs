@@ -115,28 +115,31 @@ impl GameState {
                 }
 
                 MoveType::MagicMove => {
-                    let move_list = Move::get_move_list();
+                    // get a list of moves that the player meets the requirements for
+                    let move_list = Move::get_move_list(self.player.level());
                     let move_list_len = move_list.len(); // save the length to avoid borrowing moved value
 
                     // print all of the moves
                     for index in 0..move_list_len {
                         let cur_move = &move_list[index];
 
-                        if cur_move.is_meeting_requirements(self.player.level()) {
-                            println!("{} | Cost: {}", cur_move.name().on_blue(), cur_move.cost())
-                        }
+                        println!(
+                            "{} | Cost: {}",
+                            cur_move.name().on_blue().black(),
+                            cur_move.cost()
+                        )
                     }
 
                     // choose thlet =e move
                     let mut choice = -1;
-                    while choice <= 0 || choice > (move_list_len as i32) {
-                        println!("{}", "Choose a move:".on_white());
+                    while choice < 0 || choice >= (move_list_len as i32) {
+                        println!("{}", "Choose a move:".on_white().black());
 
                         //take user input
                         let user_input = self.player.get_player_input();
 
                         //gives back -1 if the input is incorrect
-                        choice = user_input.parse::<i32>().unwrap_or(-1);
+                        choice = user_input.parse::<i32>().unwrap_or(-1) - 1; // minus one to get index
                     }
 
                     // TODO: attack the enemy with the move

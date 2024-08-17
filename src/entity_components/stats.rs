@@ -1,6 +1,6 @@
 use rand::random;
 
-const DEFENSE_AMOUNT: u32 = 20;
+const DEFENSE_AMOUNT: u32 = 50;
 
 ///struct for the stats of an entity
 pub struct Stats {
