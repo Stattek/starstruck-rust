@@ -4,6 +4,8 @@ use crate::entity_components::stats::Stats;
 use colored::Colorize;
 use std::io;
 
+use super::status::Status;
+
 ///Struct to represent the Player.
 ///Implements the Entity trait
 pub struct Player {
@@ -15,6 +17,7 @@ pub struct Player {
     xp: u32,
     xp_to_next_level: u32,
     has_gone: bool,
+    statuses: Vec<Status>,
 }
 
 impl Player {
@@ -28,12 +31,26 @@ impl Player {
             xp,
             xp_to_next_level: level * 10,
             has_gone,
+            statuses: Vec::new(), // start with no statuses
         }
     }
 
     ///Makes the Player gain xp
     fn gain_xp(&mut self, amount: u32) {
         self.xp += amount;
+    }
+
+    /// Take input from the user.
+    ///
+    /// # Returns
+    ///
+    /// - A `String` containing the trimmed input from the user.
+    pub fn get_player_input(&self) -> String {
+        let mut user_input = String::new();
+        io::stdin().read_line(&mut user_input).unwrap();
+
+        // return the user input string
+        String::from(user_input.trim())
     }
 }
 
@@ -45,12 +62,16 @@ impl Entity for Player {
     }
 
     ///Makes the Player take damage
-    fn take_damage(&mut self, amount: u32) {
-        if amount > self.health {
+    fn take_damage(&mut self, amount: u32) -> u32 {
+        let damage_taken = self.stats.calc_damage_taken(amount);
+
+        if damage_taken > self.health {
             self.health = 0;
         } else {
-            self.health -= amount;
+            self.health -= damage_taken;
         }
+
+        damage_taken
     }
 
     ///Heals the Player
@@ -83,11 +104,13 @@ impl Entity for Player {
     }
 
     ///Player chooses attack type, and it is returned.
+    ///
+    /// # FUTURE: Move this to GameState
     fn get_turn_type(&mut self) -> Option<MoveType> {
         self.has_gone = true;
 
         let mut choice = -1;
-        while choice < 0 || choice > (MoveType::NumMoveTypes as i32) {
+        while choice <= 0 || choice > (MoveType::NumMoveTypes as i32) {
             println!(
                 "What do you want to do?\n\t1. {}\n\t2. {}\n\t3. {}",
                 "Attack".red(),
@@ -96,9 +119,7 @@ impl Entity for Player {
             );
 
             //take user input
-            let mut user_input = String::new();
-            io::stdin().read_line(&mut user_input).unwrap();
-            user_input = String::from(user_input.trim());
+            let user_input = self.get_player_input();
 
             //gives back -1 if the input is incorrect
             choice = user_input.parse::<i32>().unwrap_or(-1);
@@ -122,7 +143,29 @@ impl Entity for Player {
         println!("{}:\n\t{}{}", self.name, "Health:".green(), self.health);
     }
 
+    /// Get the name of the Player
     fn name(&self) -> String {
         self.name.clone()
+    }
+
+    /// Get the level of the Player
+    fn level(&self) -> u32 {
+        self.level
+    }
+
+    fn magic_strength(&self) -> u32 {
+        self.stats.get_magic_strength()
+    }
+
+    fn start_defending(&mut self) {
+        self.stats.start_defending();
+    }
+
+    fn stop_defending(&mut self) {
+        self.stats.stop_defending();
+    }
+
+    fn apply_status(&self, the_status: Status, entity: &mut dyn Entity) {
+        todo!() //TODO:
     }
 }

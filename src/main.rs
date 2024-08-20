@@ -22,7 +22,7 @@ fn main() {
 
     let player = Player::new(
         "test".to_string(),
-        Stats::new(10, 10, 10, 10, 0),
+        Stats::new(10, 10, 10, 10, 10, 0),
         1,
         0,
         false,
