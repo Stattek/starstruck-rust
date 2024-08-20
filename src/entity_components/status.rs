@@ -17,5 +17,8 @@ impl Status {
     /// - A u32 containing the amount healed/damage done.
     pub fn calculate_amount(&self, magic_strength: u32) -> u32 {
         // TODO: balance
+        magic_strength
+            + self.base_amount
+            + (rand::random::<u32>() % (magic_strength + self.base_amount / 2))
     }
 }
