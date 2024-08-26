@@ -11,7 +11,13 @@
 
 ## TODO:
 
-- Implement Moves
-    - Take user input for the move they want to do
 - Take user input from within GameState instead of within the Player class maybe.
     - (This just seems like it makes the most sense for the GameState to handle that instead of the Player class, which is supposed to be the backend to just handle the game actions)
+- Add enemy random generation, using a vector of `Enemy` objects as the basis for creating the enemy
+    - Scale with the player (or create an instance of an enemy that is high enough level for the player to fight)?
+        - I think I'm leaning toward having the player progressively fight more and more enemies that make less and less sense maybe
+- Add xp gain on kill
+    - Keep it simple.
+    - I kinda want Paper Mario's 100 xp to level up
+- Add status effects that deal damage over time (or heal over time)
+    - Keep it simple for now, maybe scale it with the player's level later.

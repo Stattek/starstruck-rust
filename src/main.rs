@@ -4,7 +4,7 @@ mod game;
 
 //imports
 use colored::Colorize;
-use entity_components::{entity::Entity, player::Player, stats::Stats};
+use entity_components::{enemy::Enemy, entity::Entity, player::Player, stats::Stats};
 use game::GameState;
 
 fn main() {
@@ -28,6 +28,9 @@ fn main() {
         false,
     );
 
+    // TODO: use this enemy list for creating random enemies
+    let enemy_list = create_enemy_list();
+
     //TODO: temporary code possibly
     if true {
         let mut the_game = GameState::new(player, None);
@@ -35,4 +38,27 @@ fn main() {
         //play the game
         the_game.game_loop();
     }
+}
+
+fn create_enemy_list() -> Vec<Enemy> {
+    vec![
+        Enemy::new(
+            "Spider".to_string(),
+            Stats::new(10, 0, 4, 2, 1, 0),
+            1,
+            false,
+        ),
+        Enemy::new(
+            "Skeleton".to_string(),
+            Stats::new(5, 0, 3, 5, 4, 0),
+            1,
+            false,
+        ),
+        Enemy::new(
+            "Dragon".to_string(),
+            Stats::new(100, 100, 10, 10, 10, 10),
+            5,
+            false,
+        ),
+    ]
 }

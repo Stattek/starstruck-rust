@@ -164,8 +164,4 @@ impl Entity for Player {
     fn stop_defending(&mut self) {
         self.stats.stop_defending();
     }
-
-    fn apply_status(&self, the_status: Status, entity: &mut dyn Entity) {
-        todo!() //TODO:
-    }
 }

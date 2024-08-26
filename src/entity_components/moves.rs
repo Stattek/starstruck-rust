@@ -1,3 +1,5 @@
+use super::status::Status;
+
 #[derive(Clone)]
 pub enum ElementType {
     Fire,
@@ -16,10 +18,10 @@ pub enum MoveType {
 
 const MOVE_LIST_LEN: u32 = 4;
 const MOVE_LIST: [Move<'_>; MOVE_LIST_LEN as usize] = [
-    Move::new("FireOne", 12, 2, 1, ElementType::Fire),
-    Move::new("WindOne", 14, 2, 3, ElementType::Wind),
-    Move::new("EarthOne", 16, 2, 5, ElementType::Earth),
-    Move::new("WaterOne", 20, 2, 6, ElementType::Water),
+    Move::new("FireOne", 12, 2, 1, ElementType::Fire, None),
+    Move::new("WindOne", 14, 2, 3, ElementType::Wind, None),
+    Move::new("EarthOne", 16, 2, 5, ElementType::Earth, None),
+    Move::new("WaterOne", 20, 2, 6, ElementType::Water, None),
 ];
 
 /// Struct for representing a move in the game.
@@ -34,6 +36,7 @@ pub struct Move<'a> {
     mana_cost: u32,
     level_requirement: u32,
     element: ElementType,
+    applied_status: Option<Status>,
 }
 
 impl<'a> Move<'a> {
@@ -43,6 +46,7 @@ impl<'a> Move<'a> {
         mana_cost: u32,
         level_requirement: u32,
         element: ElementType,
+        applied_status: Option<Status>,
     ) -> Self {
         Self {
             name,
@@ -50,6 +54,7 @@ impl<'a> Move<'a> {
             mana_cost,
             level_requirement,
             element,
+            applied_status,
         }
     }
 

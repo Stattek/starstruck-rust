@@ -1,6 +1,8 @@
 use crate::entity_components::{entity::Entity, moves::MoveType, stats::Stats};
 use colored::Colorize;
 
+use super::status::Status;
+
 ///Struct to represent an enemy.
 ///Implements the Entity trait.
 pub struct Enemy {
@@ -10,6 +12,7 @@ pub struct Enemy {
     stats: Stats,
     level: u32,
     has_gone: bool,
+    statuses: Vec<Status>,
 }
 
 impl Enemy {
@@ -22,6 +25,7 @@ impl Enemy {
             stats,
             level,
             has_gone,
+            statuses: Vec::new(), // start with no statuses
         }
     }
 }

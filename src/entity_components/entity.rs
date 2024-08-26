@@ -72,8 +72,6 @@ pub trait Entity {
         entity.take_damage(amount)
     }
 
-    fn apply_status(&self, the_status: Status, entity: &mut dyn Entity);
-
     fn start_defending(&mut self);
 
     fn stop_defending(&mut self);

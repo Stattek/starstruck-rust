@@ -249,28 +249,3 @@ fn create_random_monster() -> Enemy {
         false,
     )
 }
-
-///TODO: Makes one entity attack the other.
-///
-///TODO: Is it good practice to keep these out here? It is hidden from outside unless I make it public.
-///Maybe I should just do this and program it like it's C instead of C++. This is a lot easier and makes more sense to me now.
-///
-///# Params
-///- `from_entity` - The entity to do the attack
-///- `victim_entity` - The entity to be attacked
-fn attack_entity(from_entity: &mut dyn Entity, victim_entity: &mut dyn Entity) {
-    //TODO: find out from_entity's strength and scale
-    let random_attack_dmg = from_entity.get_random_attack_dmg();
-
-    victim_entity.take_damage(random_attack_dmg);
-
-    // cursed string creation to colorize this string when we print it out 💀
-    let mut output_str = String::new();
-    output_str.push_str(from_entity.name().as_str());
-    output_str.push_str(" did ");
-    output_str.push_str(random_attack_dmg.to_string().as_str());
-    output_str.push_str(" damage to ");
-    output_str.push_str(victim_entity.name().as_str());
-
-    println!("{}", output_str.red());
-}
