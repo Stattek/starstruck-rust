@@ -3,6 +3,7 @@ use rand::random;
 const DEFENSE_AMOUNT: u32 = 50;
 
 ///struct for the stats of an entity
+#[derive(Clone)]
 pub struct Stats {
     health: u32,
     mana: u32,
@@ -37,13 +38,13 @@ impl Stats {
     ///Generates the health of the entity
     pub fn calculate_max_health(&self) -> u32 {
         //TODO: change this with
-        (self.health as f32 * 5.5) as u32
+        (self.health as f64 * 5.5) as u32
     }
 
     ///Generates the mana of the entity
     pub fn calculate_max_mana(&self) -> u32 {
         //TODO: change this
-        (self.mana as f32 * 2.5) as u32
+        (self.mana as f64 * 2.5) as u32
     }
 
     ///Generates random attack damage based on stats

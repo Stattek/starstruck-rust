@@ -5,6 +5,7 @@ use super::status::Status;
 
 ///Struct to represent an enemy.
 ///Implements the Entity trait.
+#[derive(Clone)]
 pub struct Enemy {
     name: String,
     health: u32,
@@ -32,10 +33,6 @@ impl Enemy {
 
 //entity implementation for enemy
 impl Entity for Enemy {
-    fn print_name(&self) {
-        print!("{}", self.name);
-    }
-
     ///Make the Enemy take damage
     fn take_damage(&mut self, amount: u32) -> u32 {
         let damage_taken = self.stats.calc_damage_taken(amount);
@@ -111,5 +108,51 @@ impl Entity for Enemy {
 
     fn stop_defending(&mut self) {
         self.stats.stop_defending()
+    }
+
+    fn tick_statuses(&mut self) {
+        let mut indicies_to_remove: Vec<usize> = Vec::new();
+
+        for i in 0..self.statuses.len() {
+            let amount = self.statuses[i].calculate_amount();
+
+            // mark this status for removal if it has no turns left
+            if self.statuses[i].tick() {
+                // push this index
+                indicies_to_remove.push(i);
+            }
+
+            if self.statuses[i].is_healing() {
+                // cursed println for text coloring
+                println!(
+                    "{} {} {} {} {}",
+                    self.name.red(),
+                    "healed".green(),
+                    amount.to_string().as_str().on_green(),
+                    "health from".green(),
+                    self.statuses[i].name().on_blue().black()
+                );
+                self.heal(amount);
+            } else {
+                println!(
+                    "{} {} {} {} {}",
+                    self.name.red(),
+                    "took".red(),
+                    amount.to_string().as_str().on_red(),
+                    "damage from".red(),
+                    self.statuses[i].name().on_blue().black()
+                );
+                self.take_damage(amount);
+            }
+
+            let mut cur_num_removed = 0;
+            // remove all statuses that were marked for removal
+            for i in 0..indicies_to_remove.len() {
+                // since the indices of the elements will change due to the removal
+                let index = indicies_to_remove[i] - cur_num_removed;
+                self.statuses.remove(index);
+                cur_num_removed += 1; // we have removed another status
+            }
+        }
     }
 }

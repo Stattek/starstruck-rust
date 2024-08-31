@@ -41,4 +41,31 @@ impl Status {
             + self.base_amount
             + (rand::random::<u32>() % (self.magic_strength_when_applied + self.base_amount / 2))
     }
+
+    /// Ticks the status effect, marking the end of the
+    /// turn for this status effect.
+    ///
+    /// # Returns
+    /// - `true` if the status has no turns left, `false` otherwise
+    pub fn tick(&mut self) -> bool {
+        self.num_turns -= 1;
+
+        self.num_turns == 0
+    }
+
+    /// Get if the status is healing
+    ///
+    /// # Returns
+    /// - `true` if the status heals, `false` otherwise
+    pub fn is_healing(&self) -> bool {
+        self.is_healing
+    }
+
+    /// Gets a copy of the name of this status
+    /// 
+    /// # Returns
+    /// - A `clone` of the name of this status
+    pub fn name(&self) -> String {
+        self.name.clone()
+    }
 }

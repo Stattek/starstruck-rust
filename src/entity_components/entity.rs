@@ -5,9 +5,6 @@ use super::status::Status;
 
 ///trait for entities
 pub trait Entity {
-    ///Prints the entity's name
-    fn print_name(&self);
-
     ///Entity takes damage
     ///
     /// # Params
@@ -75,4 +72,7 @@ pub trait Entity {
     fn start_defending(&mut self);
 
     fn stop_defending(&mut self);
+
+    /// Ticks all statuses in vector
+    fn tick_statuses(&mut self);
 }

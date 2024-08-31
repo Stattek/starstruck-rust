@@ -5,6 +5,7 @@ use rand::random;
 
 use crate::entity_components::enemy::Enemy;
 use crate::entity_components::moves::{Move, MoveType};
+use crate::entity_components::status::Status;
 use crate::{Entity, Player, Stats};
 
 ///Struct to hold the game state.
@@ -25,7 +26,7 @@ impl GameState {
             the_enemy = temp_enemy;
         } else {
             //otherwise, create a new random one
-            the_enemy = create_random_monster();
+            the_enemy = create_temp_monster();
         }
 
         GameState {
@@ -37,20 +38,54 @@ impl GameState {
 
     ///the main game loop
     pub fn game_loop(&mut self) {
+        //create lists for creating enemies and statuses
+        let enemy_list = self.create_enemy_list();
+        let status_list = self.create_status_list();
+
         //create a new random monster for now
-        self.enemy = create_random_monster();
+        self.enemy = self.create_random_monster(&enemy_list);
 
         while self.is_playing {
             //each loop through here is a full turn
-            self.do_turns_in_order();
+            self.do_turns_in_order(&enemy_list);
         }
+    }
+
+    fn create_enemy_list(&self) -> Vec<Enemy> {
+        vec![
+            Enemy::new(
+                "Spider".to_string(),
+                Stats::new(10, 0, 4, 2, 1, 0),
+                1,
+                false,
+            ),
+            Enemy::new(
+                "Skeleton".to_string(),
+                Stats::new(5, 0, 3, 5, 4, 0),
+                1,
+                false,
+            ),
+            Enemy::new(
+                "Dragon".to_string(),
+                Stats::new(100, 100, 10, 10, 10, 10),
+                5,
+                false,
+            ),
+        ]
+    }
+
+    fn create_status_list(&self) -> Vec<Status> {
+        vec![
+            Status::new(String::from("Burn"), 10, false, 0, 5),
+            Status::new(String::from("Frostburn"), 12, false, 0, 5),
+        ]
     }
 
     ///Does turns in order of speed
     ///# Returns
     ///- A tuple with a `String` to represent the type of Entity that this is
     ///and a `u32` for the index into the entity `Vec`
-    fn do_turns_in_order(&mut self) {
+    fn do_turns_in_order(&mut self, enemy_list: &Vec<Enemy>) {
         if self.player.speed() >= self.enemy.speed() {
             //prefer player if speeds are equal
 
@@ -63,7 +98,7 @@ impl GameState {
             self.do_player_turn();
 
             // check entities before next turn is done
-            if !self.check_entities() {
+            if !self.check_entities(enemy_list) {
                 self.do_enemy_turn();
             }
         } else {
@@ -73,7 +108,7 @@ impl GameState {
             self.do_enemy_turn();
 
             // check entities before doing the player's turn
-            if !self.check_entities() {
+            if !self.check_entities(enemy_list) {
                 // print info
                 println!(); //make new line
                 self.player.print_info();
@@ -84,20 +119,21 @@ impl GameState {
             }
         }
 
-        self.check_remove_entity_statuses();
-        self.check_entities();
+        self.end_turn();
+        self.check_entities(enemy_list);
     }
 
-    /// Removes all status effects from entities that need to be done at the
-    /// end of a turn.
+    /// Ends a turn and does any required activities before the turn is over.
     ///
     /// FUTURE: add more unique statuses
-    fn check_remove_entity_statuses(&mut self) {
+    fn end_turn(&mut self) {
         // always stop defending at the end of a turn
         self.player.stop_defending();
         self.enemy.stop_defending();
 
         // TODO: remove more statuses
+        self.player.tick_statuses();
+        self.enemy.tick_statuses();
     }
 
     fn do_player_turn(&mut self) {
@@ -124,7 +160,8 @@ impl GameState {
                         let cur_move = &move_list[index];
 
                         println!(
-                            "{} | Cost: {}",
+                            "{}:{} | Cost: {}",
+                            (index + 1),
                             cur_move.name().on_blue().black(),
                             cur_move.cost()
                         )
@@ -216,7 +253,7 @@ impl GameState {
     ///If the player dies, the game is over.
     /// # Returns
     /// True if an entity died, false otherwise.
-    fn check_entities(&mut self) -> bool {
+    fn check_entities(&mut self, enemy_list: &Vec<Enemy>) -> bool {
         let mut output = false;
 
         if self.player.is_dead() {
@@ -227,7 +264,7 @@ impl GameState {
             output = true;
         } else if self.enemy.is_dead() {
             println!("{}", "\nThe enemy died!".green());
-            self.enemy = create_random_monster();
+            self.enemy = self.create_random_monster(enemy_list);
 
             //entity died
             output = true;
@@ -235,13 +272,36 @@ impl GameState {
 
         output
     }
+
+    ///Creates a new random monster
+    fn create_random_monster(&self, enemy_list: &Vec<Enemy>) -> Enemy {
+        // pick a random enemy from the list
+        let random_index = random::<usize>() % enemy_list.len();
+
+        enemy_list[random_index].clone()
+    }
+
+    /// Gets the possible enemies that the player can fight.
+    ///
+    /// # Returns
+    /// - A list of enemies that the player can fight, based on level.
+    fn get_possible_enemies(&self, enemy_list: &Vec<Enemy>) -> Vec<Enemy> {
+        let mut result = Vec::new();
+
+        // iterate through all enemies
+        for i in 0..enemy_list.len() {
+            // we can fight an enemy if it is below or close to the player's level
+            if enemy_list[i].level() <= self.player.level() + 2 {
+                result.push(enemy_list[i].clone());
+            }
+        }
+
+        result
+    }
 }
 
-///Creates a new random monster
-fn create_random_monster() -> Enemy {
-    //enemy with health between 10 and 250
+fn create_temp_monster() -> Enemy {
     let random_health_stat: u32 = (random::<u32>() % 10) + 1;
-
     Enemy::new(
         String::from("test_enemy"),
         Stats::new(random_health_stat, 10, 10, 10, 10, 0),
