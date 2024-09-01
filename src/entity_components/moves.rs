@@ -1,3 +1,5 @@
+use rand::random;
+
 use super::status::Status;
 
 #[derive(Clone)]
@@ -15,14 +17,6 @@ pub enum MoveType {
     DefendMove,
     NumMoveTypes, // This should always be the last value
 }
-
-const MOVE_LIST_LEN: u32 = 4;
-const MOVE_LIST: [Move<'_>; MOVE_LIST_LEN as usize] = [
-    Move::new("FireOne", 12, 2, 1, ElementType::Fire, None),
-    Move::new("WindOne", 14, 2, 3, ElementType::Wind, None),
-    Move::new("EarthOne", 16, 2, 5, ElementType::Earth, None),
-    Move::new("WaterOne", 20, 2, 6, ElementType::Water, None),
-];
 
 /// Struct for representing a move in the game.
 /// This could be an attacking or healing move.
@@ -76,13 +70,13 @@ impl<'a> Move<'a> {
     ///
     /// # Returns
     /// - A `Vec` of all the `Move`s in the game.
-    pub fn get_move_list(entity_level: u32) -> Vec<Move<'a>> {
+    pub fn get_move_list(full_move_list: &Vec<Move<'a>>, entity_level: u32) -> Vec<Move<'a>> {
         let mut move_vector: Vec<Move<'a>> = Vec::new();
 
-        for i in 0..MOVE_LIST_LEN {
-            if MOVE_LIST[i as usize].is_meeting_requirements(entity_level) {
+        for i in 0..full_move_list.len() {
+            if full_move_list[i].is_meeting_requirements(entity_level) {
                 // push a clone of the move to the resulting list
-                move_vector.push(MOVE_LIST[i as usize].clone());
+                move_vector.push(full_move_list[i].clone());
             } else {
                 // break out of the for loop, as moves are ordered by level requirement
                 break;
@@ -118,5 +112,23 @@ impl<'a> Move<'a> {
     /// - the name of the `Move`.
     pub fn name(&self) -> &'a str {
         self.name
+    }
+
+    pub fn roll_status_chance(&self) -> bool {
+        let mut result = false;
+        if self.applied_status.is_some() {
+            let rand_num = (random::<u32>() % 100) + 1;
+            let chance = (Status::status_chance() * 100 as f64) as u32;
+
+            if rand_num <= chance {
+                result = true
+            }
+        }
+
+        result
+    }
+
+    pub fn get_status(&self) -> Option<Status> {
+        self.applied_status.clone()
     }
 }
