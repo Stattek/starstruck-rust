@@ -4,7 +4,7 @@ use colored::Colorize;
 use rand::random;
 
 use crate::entity_components::enemy::Enemy;
-use crate::entity_components::moves::{Move, MoveType};
+use crate::entity_components::moves::{ElementType, Move, MoveType};
 use crate::entity_components::status::Status;
 use crate::{Entity, Player, Stats};
 
@@ -25,7 +25,7 @@ impl GameState {
             //if we were given an enemy, use this
             the_enemy = temp_enemy;
         } else {
-            //otherwise, create a new random one
+            //otherwise, create a new temporary one until we create a random one
             the_enemy = create_temp_monster();
         }
 
@@ -39,19 +39,21 @@ impl GameState {
     ///the main game loop
     pub fn game_loop(&mut self) {
         //create lists for creating enemies and statuses
-        let enemy_list = self.create_enemy_list();
-        let status_list = self.create_status_list();
+        let enemy_list = Self::create_enemy_list();
+        let status_list = Self::create_status_list();
+        let move_list = Self::create_move_list(&status_list);
 
-        //create a new random monster for now
-        self.enemy = self.create_random_monster(&enemy_list);
+        //create a new random monster
+        // TODO: this will cause issues if you want to start off with a specific enemy
+        self.enemy = Self::create_random_enemy(&enemy_list);
 
         while self.is_playing {
             //each loop through here is a full turn
-            self.do_turns_in_order(&enemy_list);
+            self.do_turns_in_order(&enemy_list, &move_list);
         }
     }
 
-    fn create_enemy_list(&self) -> Vec<Enemy> {
+    fn create_enemy_list() -> Vec<Enemy> {
         vec![
             Enemy::new(
                 "Spider".to_string(),
@@ -74,10 +76,39 @@ impl GameState {
         ]
     }
 
-    fn create_status_list(&self) -> Vec<Status> {
+    fn create_status_list() -> Vec<Status> {
         vec![
             Status::new(String::from("Burn"), 10, false, 0, 5),
             Status::new(String::from("Frostburn"), 12, false, 0, 5),
+        ]
+    }
+
+    fn find_status(target_name: &str, status_list: &Vec<Status>) -> Option<Status> {
+        let mut result: Option<Status> = None;
+
+        for i in 0..status_list.len() {
+            if target_name == status_list[i].name() {
+                result = Some(status_list[i].clone());
+                break;
+            }
+        }
+
+        result
+    }
+
+    fn create_move_list(status_list: &Vec<Status>) -> Vec<Move<'_>> {
+        vec![
+            Move::new(
+                "FireOne",
+                12,
+                2,
+                1,
+                ElementType::Fire,
+                Self::find_status("Burn", status_list),
+            ),
+            Move::new("WindOne", 14, 2, 3, ElementType::Wind, None),
+            Move::new("EarthOne", 16, 2, 5, ElementType::Earth, None),
+            Move::new("WaterOne", 20, 2, 6, ElementType::Water, None),
         ]
     }
 
@@ -85,7 +116,7 @@ impl GameState {
     ///# Returns
     ///- A tuple with a `String` to represent the type of Entity that this is
     ///and a `u32` for the index into the entity `Vec`
-    fn do_turns_in_order(&mut self, enemy_list: &Vec<Enemy>) {
+    fn do_turns_in_order(&mut self, enemy_list: &Vec<Enemy>, move_list: &Vec<Move<'_>>) {
         if self.player.speed() >= self.enemy.speed() {
             //prefer player if speeds are equal
 
@@ -95,7 +126,7 @@ impl GameState {
             self.enemy.print_info();
 
             // do turns
-            self.do_player_turn();
+            self.do_player_turn(move_list);
 
             // check entities before next turn is done
             if !self.check_entities(enemy_list) {
@@ -136,7 +167,7 @@ impl GameState {
         self.enemy.tick_statuses();
     }
 
-    fn do_player_turn(&mut self) {
+    fn do_player_turn(&mut self, move_list: &Vec<Move>) {
         //get the turn type
         if let Some(turn_type) = self.player.get_turn_type() {
             //now act upon this turn type
@@ -152,7 +183,7 @@ impl GameState {
 
                 MoveType::MagicMove => {
                     // get a list of moves that the player meets the requirements for
-                    let move_list = Move::get_move_list(self.player.level());
+                    let move_list = Move::get_move_list(move_list, self.player.level());
                     let move_list_len = move_list.len(); // save the length to avoid borrowing moved value
 
                     // print all of the moves
@@ -167,7 +198,7 @@ impl GameState {
                         )
                     }
 
-                    // choose thlet =e move
+                    // choose the move
                     let mut choice = -1;
                     while choice < 0 || choice >= (move_list_len as i32) {
                         println!("{}", "Choose a move:".on_white().black());
@@ -179,13 +210,18 @@ impl GameState {
                         choice = user_input.parse::<i32>().unwrap_or(-1) - 1; // minus one to get index
                     }
 
-                    // TODO: attack the enemy with the move
                     let random_damage = move_list[choice as usize]
                         .generate_random_amount(self.player.magic_strength());
 
                     let damage_dealt = self.player.attack_entity(random_damage, &mut self.enemy);
                     // display the damage that was dealt
                     self.display_attack_text(self.player.name(), self.enemy.name(), damage_dealt);
+
+                    // roll for random chance to apply status if it exists
+                    if move_list[choice as usize].roll_status_chance() {
+                        self.enemy
+                            .apply_status(&move_list[choice as usize].get_status().unwrap());
+                    }
                 }
                 MoveType::DefendMove => {
                     self.player.start_defending();
@@ -228,6 +264,11 @@ impl GameState {
         }
     }
 
+    fn apply_status(&self, entity: &mut dyn Entity, status: &Status) {
+        println!("{} appled to {}", status.name(), entity.name());
+        entity.apply_status(status);
+    }
+
     /// Displays text when an entity attacks another.
     fn display_attack_text(
         &self,
@@ -264,8 +305,10 @@ impl GameState {
             output = true;
         } else if self.enemy.is_dead() {
             println!("{}", "\nThe enemy died!".green());
-            self.enemy = self.create_random_monster(enemy_list);
-
+            self.enemy = Self::create_random_enemy(enemy_list);
+            let xp_dropped=self.enemy.drop_xp(self.player.level());
+            self.player.gain_xp(xp_dropped);
+            
             //entity died
             output = true;
         }
@@ -274,7 +317,7 @@ impl GameState {
     }
 
     ///Creates a new random monster
-    fn create_random_monster(&self, enemy_list: &Vec<Enemy>) -> Enemy {
+    fn create_random_enemy(enemy_list: &Vec<Enemy>) -> Enemy {
         // pick a random enemy from the list
         let random_index = random::<usize>() % enemy_list.len();
 

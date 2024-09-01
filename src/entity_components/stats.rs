@@ -7,7 +7,7 @@ const DEFENSE_AMOUNT: u32 = 50;
 pub struct Stats {
     health: u32,
     mana: u32,
-    speed: u32,
+    speed: u32, // TODO: might remove
     strength: u32,
     magic_strength: u32,
     defense: u32,
@@ -79,5 +79,18 @@ impl Stats {
             self.defense -= DEFENSE_AMOUNT;
             self.is_defending = false;
         }
+    }
+
+    pub fn increase_physical(&mut self) {
+        self.strength += 1;
+    }
+
+    pub fn increase_magic(&mut self) {
+        self.mana += 1;
+        self.magic_strength += 1;
+    }
+
+    pub fn increase_health(&mut self) {
+        self.health += 1;
     }
 }

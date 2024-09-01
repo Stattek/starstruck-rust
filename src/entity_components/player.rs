@@ -35,9 +35,15 @@ impl Player {
         }
     }
 
-    ///Makes the Player gain xp
-    fn gain_xp(&mut self, amount: u32) {
+    ///Makes the Player gain xp and level up if they reach 100 xp
+    pub fn gain_xp(&mut self, amount: u32) {
         self.xp += amount;
+
+        // for level-up chains
+        while self.xp >= 100 {
+            self.xp -= 100;
+            self.level_up();
+        }
     }
 
     /// Take input from the user.
@@ -51,6 +57,55 @@ impl Player {
 
         // return the user input string
         String::from(user_input.trim())
+    }
+
+    /// The player levels up and gets to choose stats to increase
+    fn level_up(&mut self) {
+        /*health: u32,
+        mana: u32,
+        speed: u32,
+        strength: u32,
+        magic_strength: u32,
+        defense: u32 */
+        println!(
+            "Choose a stat to increase:\n1. {}\n2. {}\n3. {}",
+            "Strength".yellow(),
+            "Magic".blue(),
+            "Health".red()
+        );
+
+        let mut user_input = self.get_player_input();
+
+        let mut choice = user_input.parse::<i32>().unwrap_or(-1);
+
+        while choice <= 0 || choice > 3 {
+            println!(
+                "Choose a stat to increase:\n1. {}\n2. {}\n3. {}",
+                "Strength".yellow(),
+                "Magic".blue(),
+                "Health".red()
+            );
+
+            //take user input
+            user_input = self.get_player_input();
+
+            //gives back -1 if the input is incorrect
+            choice = user_input.parse::<i32>().unwrap_or(-1);
+        }
+
+        match choice {
+            1 => self.stats.increase_physical(),
+            2 => self.stats.increase_magic(),
+            3 => self.stats.increase_health(),
+            _ => panic!("Invalid choice"), // just panic if we get an invalid answer
+        }
+        self.reset_stats();
+    }
+
+    /// Recalculates stats and gives the player max health and mana
+    fn reset_stats(&mut self) {
+        self.health = self.stats.calculate_max_health();
+        self.mana = self.stats.calculate_max_mana();
     }
 }
 
@@ -204,5 +259,9 @@ impl Entity for Player {
                 cur_num_removed += 1; // we have removed another status
             }
         }
+    }
+
+    fn apply_status(&mut self, status: &Status) {
+        self.statuses.push(status.clone());
     }
 }

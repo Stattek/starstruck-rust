@@ -75,4 +75,6 @@ pub trait Entity {
 
     /// Ticks all statuses in vector
     fn tick_statuses(&mut self);
+
+    fn apply_status(&mut self, status: &Status);
 }

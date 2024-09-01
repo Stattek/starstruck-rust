@@ -62,10 +62,14 @@ impl Status {
     }
 
     /// Gets a copy of the name of this status
-    /// 
+    ///
     /// # Returns
     /// - A `clone` of the name of this status
     pub fn name(&self) -> String {
         self.name.clone()
+    }
+
+    pub fn status_chance() -> f64 {
+        0.2
     }
 }

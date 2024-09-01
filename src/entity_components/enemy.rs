@@ -16,6 +16,8 @@ pub struct Enemy {
     statuses: Vec<Status>,
 }
 
+const BASE_XP: u32 = 3;
+
 impl Enemy {
     ///create new enemy
     pub fn new(name: String, stats: Stats, level: u32, has_gone: bool) -> Self {
@@ -28,6 +30,19 @@ impl Enemy {
             has_gone,
             statuses: Vec::new(), // start with no statuses
         }
+    }
+
+    pub fn drop_xp(&self, player_level: u32) -> u32 {
+        let mut amount = BASE_XP; // start with a base xp
+
+        let num_levels_above_player = self.level as i64 - player_level as i64;
+        for _i in 0..num_levels_above_player {
+            amount *= BASE_XP; // just crazy xp as enemies get way higher leveled than you
+        }
+
+        println!("{} dropped {} xp!", self.name, amount.to_string().blue());
+
+        amount
     }
 }
 
@@ -154,5 +169,9 @@ impl Entity for Enemy {
                 cur_num_removed += 1; // we have removed another status
             }
         }
+    }
+
+    fn apply_status(&mut self, status: &Status) {
+        self.statuses.push(status.clone());
     }
 }
