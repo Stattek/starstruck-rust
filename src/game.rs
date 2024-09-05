@@ -304,9 +304,11 @@ impl GameState {
             output = true;
         } else if self.enemy.is_dead() {
             println!("{}", "\nThe enemy died!".green());
-            self.enemy = Self::create_random_enemy(enemy_list);
             let xp_dropped = self.enemy.drop_xp(self.player.level());
             self.player.gain_xp(xp_dropped);
+
+            // create the enemy after the xp is dropped
+            self.enemy = Self::create_random_enemy(enemy_list);
 
             //entity died
             output = true;
