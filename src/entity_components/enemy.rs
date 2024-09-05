@@ -141,6 +141,7 @@ impl Entity for Enemy {
         let mut indicies_to_remove: Vec<usize> = Vec::new();
 
         for i in 0..self.statuses.len() {
+            // TODO: there is a bug with this going out of bounds
             let amount = self.statuses[i].calculate_amount();
 
             // mark this status for removal if it has no turns left

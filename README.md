@@ -21,3 +21,4 @@
     - I kinda want Paper Mario's 100 xp to level up
 - Add status effects that deal damage over time (or heal over time)
     - Keep it simple for now, maybe scale it with the player's level later.
+- Do a uniqueness check before adding a status (so two of the same status can't exist)

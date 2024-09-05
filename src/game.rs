@@ -45,7 +45,7 @@ impl GameState {
 
         //create a new random monster
         // TODO: this will cause issues if you want to start off with a specific enemy
-        self.enemy = Self::create_random_enemy(&enemy_list);
+        self.enemy = self.create_random_enemy(&enemy_list);
 
         while self.is_playing {
             //each loop through here is a full turn
@@ -69,7 +69,7 @@ impl GameState {
             ),
             Enemy::new(
                 "Dragon".to_string(),
-                Stats::new(100, 100, 10, 10, 10, 10),
+                Stats::new(20, 100, 10, 10, 10, 10),
                 5,
                 false,
             ),
@@ -308,7 +308,7 @@ impl GameState {
             self.player.gain_xp(xp_dropped);
 
             // create the enemy after the xp is dropped
-            self.enemy = Self::create_random_enemy(enemy_list);
+            self.enemy = self.create_random_enemy(&enemy_list);
 
             //entity died
             output = true;
@@ -318,11 +318,12 @@ impl GameState {
     }
 
     ///Creates a new random monster
-    fn create_random_enemy(enemy_list: &Vec<Enemy>) -> Enemy {
+    fn create_random_enemy(&self, enemy_list: &Vec<Enemy>) -> Enemy {
+        let possible_enemies = self.get_possible_enemies(enemy_list);
         // pick a random enemy from the list
-        let random_index = random::<usize>() % enemy_list.len();
+        let random_index = random::<usize>() % possible_enemies.len();
 
-        enemy_list[random_index].clone()
+        possible_enemies[random_index].clone()
     }
 
     /// Gets the possible enemies that the player can fight.
