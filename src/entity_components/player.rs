@@ -215,6 +215,7 @@ impl Entity for Player {
         self.stats.stop_defending();
     }
 
+    /// Ticks statuses and goes through the list
     fn tick_statuses(&mut self) {
         let mut indicies_to_remove: Vec<usize> = Vec::new();
 
@@ -227,8 +228,8 @@ impl Entity for Player {
                 indicies_to_remove.push(i);
             }
 
+            // print what the status effect did and apply effect
             if self.statuses[i].is_healing() {
-                // cursed println for text coloring
                 println!(
                     "{} {} {} {} {}",
                     self.name.green(),
@@ -249,15 +250,16 @@ impl Entity for Player {
                 );
                 self.take_damage(amount);
             }
+        }
 
-            let mut cur_num_removed = 0;
-            // remove all statuses that were marked for removal
-            for i in 0..indicies_to_remove.len() {
-                // since the indices of the elements will change due to the removal
-                let index = indicies_to_remove[i] - cur_num_removed;
-                self.statuses.remove(index);
-                cur_num_removed += 1; // we have removed another status
-            }
+        // remove all statuses that were marked for removal
+        let mut cur_num_removed = 0;
+
+        for i in 0..indicies_to_remove.len() {
+            // since the indices of the elements will change due to the removal
+            let index = indicies_to_remove[i] - cur_num_removed;
+            self.statuses.remove(index);
+            cur_num_removed += 1; // we have removed another status
         }
     }
 

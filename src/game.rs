@@ -162,7 +162,6 @@ impl GameState {
         self.player.stop_defending();
         self.enemy.stop_defending();
 
-        // TODO: remove more statuses
         self.player.tick_statuses();
         self.enemy.tick_statuses();
     }
@@ -306,9 +305,9 @@ impl GameState {
         } else if self.enemy.is_dead() {
             println!("{}", "\nThe enemy died!".green());
             self.enemy = Self::create_random_enemy(enemy_list);
-            let xp_dropped=self.enemy.drop_xp(self.player.level());
+            let xp_dropped = self.enemy.drop_xp(self.player.level());
             self.player.gain_xp(xp_dropped);
-            
+
             //entity died
             output = true;
         }
