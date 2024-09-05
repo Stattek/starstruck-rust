@@ -9,7 +9,9 @@ use super::status::Status;
 pub struct Enemy {
     name: String,
     health: u32,
+    max_health: u32,
     mana: u32,
+    max_mana: u32,
     stats: Stats,
     level: u32,
     has_gone: bool,
@@ -21,10 +23,14 @@ const BASE_XP: u32 = 8;
 impl Enemy {
     ///create new enemy
     pub fn new(name: String, stats: Stats, level: u32, has_gone: bool) -> Self {
+        let starting_health = stats.calculate_max_health();
+        let starting_mana = stats.calculate_max_mana();
         Self {
             name,
-            health: stats.calculate_max_health(),
-            mana: stats.calculate_max_mana(),
+            health: starting_health,
+            max_health: starting_health,
+            mana: starting_mana,
+            max_mana: starting_mana,
             stats,
             level,
             has_gone,
@@ -102,7 +108,13 @@ impl Entity for Enemy {
 
     ///Print the Enemy info
     fn print_info(&self) {
-        println!("{}:\n\t{}{}", self.name, "Health: ".green(), self.health);
+        println!(
+            "{}:\n\t{}{} / {}",
+            self.name,
+            "Health: ".green(),
+            self.health,
+            self.max_health
+        );
     }
 
     fn name(&self) -> String {

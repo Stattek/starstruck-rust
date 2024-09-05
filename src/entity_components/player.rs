@@ -11,7 +11,9 @@ use super::status::Status;
 pub struct Player {
     name: String,
     health: u32,
+    max_health: u32,
     mana: u32,
+    max_mana: u32,
     stats: Stats,
     level: u32,
     xp: u32,
@@ -22,10 +24,15 @@ pub struct Player {
 
 impl Player {
     pub fn new(name: String, stats: Stats, level: u32, xp: u32, has_gone: bool) -> Self {
+        // start with this mana and hp
+        let starting_health = stats.calculate_max_health();
+        let starting_mana = stats.calculate_max_mana();
         Self {
             name,
-            health: stats.calculate_max_health(),
-            mana: stats.calculate_max_mana(),
+            health: starting_health,
+            max_health: starting_health,
+            mana: starting_mana,
+            max_mana: starting_mana,
             stats,
             level,
             xp,
@@ -104,8 +111,12 @@ impl Player {
 
     /// Recalculates stats and gives the player max health and mana
     fn reset_stats(&mut self) {
-        self.health = self.stats.calculate_max_health();
-        self.mana = self.stats.calculate_max_mana();
+        let new_health = self.stats.calculate_max_health();
+        let new_mana = self.stats.calculate_max_mana();
+        self.health = new_health;
+        self.max_health = new_health;
+        self.mana = new_mana;
+        self.max_mana = new_mana;
     }
 }
 
@@ -190,7 +201,16 @@ impl Entity for Player {
 
     ///Print the Player info
     fn print_info(&self) {
-        println!("{}:\n\t{}{}", self.name, "Health:".green(), self.health);
+        println!(
+            "{}:\n\t{}{} / {}\n\t{}{} / {}",
+            self.name,
+            "Health: ".green(),
+            self.health,
+            self.max_health,
+            "Mana: ".blue(),
+            self.mana,
+            self.max_mana
+        );
     }
 
     /// Get the name of the Player
