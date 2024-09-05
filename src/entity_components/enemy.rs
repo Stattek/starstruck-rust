@@ -16,7 +16,7 @@ pub struct Enemy {
     statuses: Vec<Status>,
 }
 
-const BASE_XP: u32 = 3;
+const BASE_XP: u32 = 8;
 
 impl Enemy {
     ///create new enemy
@@ -37,7 +37,7 @@ impl Enemy {
 
         let num_levels_above_player = self.level as i64 - player_level as i64;
         for _i in 0..num_levels_above_player {
-            amount *= BASE_XP; // just crazy xp as enemies get way higher leveled than you
+            amount *= 2; // just crazy xp as enemies get way higher leveled than you
         }
 
         println!("{} dropped {} xp!", self.name, amount.to_string().blue());
