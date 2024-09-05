@@ -68,12 +68,8 @@ impl Player {
 
     /// The player levels up and gets to choose stats to increase
     fn level_up(&mut self) {
-        /*health: u32,
-        mana: u32,
-        speed: u32,
-        strength: u32,
-        magic_strength: u32,
-        defense: u32 */
+        // increment level
+        self.level += 1;
         println!(
             "Choose a stat to increase:\n1. {}\n2. {}\n3. {}",
             "Strength".yellow(),
@@ -202,8 +198,10 @@ impl Entity for Player {
     ///Print the Player info
     fn print_info(&self) {
         println!(
-            "{}:\n\t{}{} / {}\n\t{}{} / {}",
+            "{}:\n\t{}{}\n\t{}{} / {}\n\t{}{} / {}",
             self.name,
+            "Level: ".blue(),
+            self.level.to_string().on_blue(),
             "Health: ".green(),
             self.health,
             self.max_health,

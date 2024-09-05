@@ -57,20 +57,20 @@ impl GameState {
         vec![
             Enemy::new(
                 "Spider".to_string(),
-                Stats::new(10, 0, 4, 2, 1, 0),
+                Stats::new(5, 0, 4, 2, 1, 0),
                 1,
                 false,
             ),
             Enemy::new(
                 "Skeleton".to_string(),
-                Stats::new(5, 0, 3, 5, 4, 0),
+                Stats::new(3, 0, 3, 5, 4, 0),
                 1,
                 false,
             ),
             Enemy::new(
                 "Dragon".to_string(),
                 Stats::new(20, 100, 10, 10, 10, 10),
-                5,
+                8,
                 false,
             ),
         ]
