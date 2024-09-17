@@ -55,12 +55,7 @@ impl GameState {
 
     fn create_enemy_list() -> Vec<Enemy> {
         vec![
-            Enemy::new(
-                "Spider".to_string(),
-                Stats::new(5, 0, 4, 2, 1, 0),
-                1,
-                false,
-            ),
+            Enemy::new("Spider".to_string(), Stats::new(5, 0, 4, 2, 1, 0), 1, false),
             Enemy::new(
                 "Skeleton".to_string(),
                 Stats::new(3, 0, 3, 5, 4, 0),
@@ -83,9 +78,10 @@ impl GameState {
         ]
     }
 
-    fn find_status(target_name: &str, status_list: &Vec<Status>) -> Option<Status> {
+    fn get_status_from(target_name: &str, status_list: &Vec<Status>) -> Option<Status> {
         let mut result: Option<Status> = None;
 
+        // go through the status list and find the one that matches our target string
         for i in 0..status_list.len() {
             if target_name == status_list[i].name() {
                 result = Some(status_list[i].clone());
@@ -104,7 +100,7 @@ impl GameState {
                 2,
                 1,
                 ElementType::Fire,
-                Self::find_status("Burn", status_list),
+                Self::get_status_from("Burn", status_list),
             ),
             Move::new("WindOne", 14, 2, 3, ElementType::Wind, None),
             Move::new("EarthOne", 16, 2, 5, ElementType::Earth, None),
@@ -166,6 +162,7 @@ impl GameState {
         self.enemy.tick_statuses();
     }
 
+    // TODO: move some of this code and similar code into the structs for the entities, so we can de-spaghettify before it gets bad
     fn do_player_turn(&mut self, move_list: &Vec<Move>) {
         //get the turn type
         if let Some(turn_type) = self.player.get_turn_type() {
@@ -240,6 +237,7 @@ impl GameState {
         }
     }
 
+    // TODO: move code for this into the Enemy struct to avoid spaghetti code
     fn do_enemy_turn(&mut self) {
         //get the turn type
         if let Some(turn_type) = self.enemy.get_turn_type() {
@@ -275,7 +273,6 @@ impl GameState {
         victim_entity_name: String,
         damage_dealt: u32,
     ) {
-        // TODO: display text for this
         // cursed string creation to colorize this string when we print it out 💀
         let mut output_str = String::new();
         output_str.push_str(from_entity_name.as_str());
@@ -345,6 +342,7 @@ impl GameState {
     }
 }
 
+// TODO: do we really need this??
 fn create_temp_monster() -> Enemy {
     let random_health_stat: u32 = (random::<u32>() % 10) + 1;
     Enemy::new(

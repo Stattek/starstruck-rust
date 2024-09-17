@@ -20,9 +20,6 @@ pub enum MoveType {
 
 /// Struct for representing a move in the game.
 /// This could be an attacking or healing move.
-///
-/// # FUTURE:
-/// - Create status effects like what was being worked on in the Java version.
 #[derive(Clone)]
 pub struct Move<'a> {
     name: &'a str, // specify the lifetime of this variable (still don't know why)
