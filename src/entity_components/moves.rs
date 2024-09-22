@@ -1,3 +1,7 @@
+use rand::random;
+
+use super::status::Status;
+
 #[derive(Clone)]
 pub enum ElementType {
     Fire,
@@ -14,19 +18,8 @@ pub enum MoveType {
     NumMoveTypes, // This should always be the last value
 }
 
-const MOVE_LIST_LEN: u32 = 4;
-const MOVE_LIST: [Move<'_>; MOVE_LIST_LEN as usize] = [
-    Move::new("FireOne", 12, 2, 1, ElementType::Fire),
-    Move::new("WindOne", 14, 2, 3, ElementType::Wind),
-    Move::new("EarthOne", 16, 2, 5, ElementType::Earth),
-    Move::new("WaterOne", 20, 2, 6, ElementType::Water),
-];
-
 /// Struct for representing a move in the game.
 /// This could be an attacking or healing move.
-///
-/// # FUTURE:
-/// - Create status effects like what was being worked on in the Java version.
 #[derive(Clone)]
 pub struct Move<'a> {
     name: &'a str, // specify the lifetime of this variable (still don't know why)
@@ -34,6 +27,7 @@ pub struct Move<'a> {
     mana_cost: u32,
     level_requirement: u32,
     element: ElementType,
+    applied_status: Option<Status>,
 }
 
 impl<'a> Move<'a> {
@@ -43,6 +37,7 @@ impl<'a> Move<'a> {
         mana_cost: u32,
         level_requirement: u32,
         element: ElementType,
+        applied_status: Option<Status>,
     ) -> Self {
         Self {
             name,
@@ -50,6 +45,7 @@ impl<'a> Move<'a> {
             mana_cost,
             level_requirement,
             element,
+            applied_status,
         }
     }
 
@@ -71,13 +67,13 @@ impl<'a> Move<'a> {
     ///
     /// # Returns
     /// - A `Vec` of all the `Move`s in the game.
-    pub fn get_move_list(entity_level: u32) -> Vec<Move<'a>> {
+    pub fn get_move_list(full_move_list: &Vec<Move<'a>>, entity_level: u32) -> Vec<Move<'a>> {
         let mut move_vector: Vec<Move<'a>> = Vec::new();
 
-        for i in 0..MOVE_LIST_LEN {
-            if MOVE_LIST[i as usize].is_meeting_requirements(entity_level) {
+        for i in 0..full_move_list.len() {
+            if full_move_list[i].is_meeting_requirements(entity_level) {
                 // push a clone of the move to the resulting list
-                move_vector.push(MOVE_LIST[i as usize].clone());
+                move_vector.push(full_move_list[i].clone());
             } else {
                 // break out of the for loop, as moves are ordered by level requirement
                 break;
@@ -113,5 +109,43 @@ impl<'a> Move<'a> {
     /// - the name of the `Move`.
     pub fn name(&self) -> &'a str {
         self.name
+    }
+
+    pub fn roll_status_chance(&self) -> bool {
+        let mut result = false;
+        if self.applied_status.is_some() {
+            let rand_num = (random::<u32>() % 100) + 1;
+            let chance = (Status::status_chance() * 100 as f64) as u32;
+
+            if rand_num <= chance {
+                result = true
+            }
+        }
+
+        result
+    }
+
+    pub fn get_status(&self) -> Option<Status> {
+        self.applied_status.clone()
+    }
+
+    /// Creates a `Move` list for the game
+    ///
+    /// # Returns
+    /// - The full `Move` list for the game.
+    pub fn create_move_list(status_list: &Vec<Status>) -> Vec<Move<'_>> {
+        vec![
+            Move::new(
+                "FireOne",
+                12,
+                2,
+                1,
+                ElementType::Fire,
+                Status::get_status_from("Burn", status_list),
+            ),
+            Move::new("WindOne", 14, 2, 3, ElementType::Wind, None),
+            Move::new("EarthOne", 16, 2, 5, ElementType::Earth, None),
+            Move::new("WaterOne", 20, 2, 6, ElementType::Water, None),
+        ]
     }
 }
