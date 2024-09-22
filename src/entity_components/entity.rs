@@ -1,18 +1,18 @@
 ///Represents the type of move that an entity is making
-pub enum MoveType {
-    AttackMove,
-    MagicMove,
-    DefendMove,
-    NumMoveTypes, //THIS SHOULD BE THE LAST VALUE IN THIS ENUM
-}
+use crate::entity_components::moves::MoveType;
+
+use super::status::Status;
 
 ///trait for entities
 pub trait Entity {
-    ///Prints the entity's name
-    fn print_name(&self);
-
     ///Entity takes damage
-    fn take_damage(&mut self, amount: u32);
+    ///
+    /// # Params
+    /// - `amount` - The amount of damage the entity is going to take
+    ///
+    /// # Returns
+    /// - The amount of damage the entity actually took from the attack, such as when an entity takes less damage due to defense.
+    fn take_damage(&mut self, amount: u32) -> u32;
 
     ///Entity heals
     fn heal(&mut self, amount: u32);
@@ -23,7 +23,23 @@ pub trait Entity {
     ///Get the speed of the entity
     fn speed(&self) -> u32;
 
+    /// Get the level of the entity
+    ///
+    /// # Returns
+    /// - The level of this entity
+    fn level(&self) -> u32;
+
+    /// Get the name of the entity
+    ///
+    /// # Returns
+    /// - The name of this entity
     fn name(&self) -> String;
+
+    /// Get the magic strength of the entity
+    ///
+    /// # Returns
+    /// - The magic strength of this entity
+    fn magic_strength(&self) -> u32;
 
     ///Checks to see if this entity is dead
     fn is_dead(&self) -> bool;
@@ -39,4 +55,31 @@ pub trait Entity {
 
     ///Print the Entity info
     fn print_info(&self);
+
+    ///Makes this `Entity` attack another `Entity`.
+    ///
+    ///# Params
+    ///
+    /// - `amount` - The amount of damage the enemy will take
+    /// - `entity` - The entity to take damage
+    ///
+    /// # Returns
+    /// - The amount of damage dealt to the enemy.
+    fn attack_entity(&self, amount: u32, entity: &mut dyn Entity) -> u32 {
+        entity.take_damage(amount)
+    }
+
+    /// Entity starts defending.
+    fn start_defending(&mut self);
+
+    /// Entity stops defending.
+    fn stop_defending(&mut self);
+
+    /// Ticks all statuses in vector
+    fn tick_statuses(&mut self);
+
+    /// Applies a status to this Entity.
+    fn apply_status(&mut self, status: &Status);
+
+    fn attack_move(&self, target: &mut dyn Entity) -> bool;
 }
