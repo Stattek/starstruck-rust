@@ -22,3 +22,10 @@
 - Add status effects that deal damage over time (or heal over time)
     - Keep it simple for now, maybe scale it with the player's level later.
 - Do a uniqueness check before adding a status (so two of the same status can't exist)
+- Maybe implement some sort of rock-paper-scissors system?
+    - Defending beats physical attack
+    - Physical attack beats Magic attack
+    - Magic attack beats defending
+
+## TUI TODO:
+- Would be awesome to have EarthBound-like backgrounds in the TUI.

@@ -128,4 +128,24 @@ impl<'a> Move<'a> {
     pub fn get_status(&self) -> Option<Status> {
         self.applied_status.clone()
     }
+
+    /// Creates a `Move` list for the game
+    ///
+    /// # Returns
+    /// - The full `Move` list for the game.
+    pub fn create_move_list(status_list: &Vec<Status>) -> Vec<Move<'_>> {
+        vec![
+            Move::new(
+                "FireOne",
+                12,
+                2,
+                1,
+                ElementType::Fire,
+                Status::get_status_from("Burn", status_list),
+            ),
+            Move::new("WindOne", 14, 2, 3, ElementType::Wind, None),
+            Move::new("EarthOne", 16, 2, 5, ElementType::Earth, None),
+            Move::new("WaterOne", 20, 2, 6, ElementType::Water, None),
+        ]
+    }
 }

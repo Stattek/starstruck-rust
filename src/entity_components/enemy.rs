@@ -18,7 +18,7 @@ pub struct Enemy {
     statuses: Vec<Status>,
 }
 
-const BASE_XP: u32 = 8;
+const BASE_XP: u32 = 20; // the base xp dropped by an enemy
 
 impl Enemy {
     ///create new enemy
@@ -49,6 +49,39 @@ impl Enemy {
         println!("{} dropped {} xp!", self.name, amount.to_string().blue());
 
         amount
+    }
+
+    fn display_attack_text(&self, victim_entity_name: String, damage_dealt: u32) {
+        let mut output_str = String::new();
+        output_str.push_str(self.name.as_str());
+        output_str.push_str(" did ");
+        output_str.push_str(damage_dealt.to_string().as_str());
+        output_str.push_str(" damage to ");
+        output_str.push_str(victim_entity_name.as_str());
+
+        println!("{}", output_str.red());
+    }
+
+    /// Create the enemy list for the game
+    ///
+    /// # Returns
+    /// - The full enemy list for the game
+    pub fn create_enemy_list() -> Vec<Enemy> {
+        vec![
+            Enemy::new("Spider".to_string(), Stats::new(5, 0, 4, 2, 1, 0), 1, false),
+            Enemy::new(
+                "Skeleton".to_string(),
+                Stats::new(3, 0, 3, 5, 4, 0),
+                1,
+                false,
+            ),
+            Enemy::new(
+                "Dragon".to_string(),
+                Stats::new(20, 100, 10, 10, 10, 10),
+                8,
+                false,
+            ),
+        ]
     }
 }
 
@@ -185,6 +218,19 @@ impl Entity for Enemy {
     }
 
     fn apply_status(&mut self, status: &Status) {
+        println!("{} appled to {}", status.name(), self.name());
         self.statuses.push(status.clone());
+    }
+
+    fn attack_move(&self, target: &mut dyn Entity) -> bool {
+        // attack the player with a random amount of damage
+        let random_damage = self.get_random_attack_dmg();
+
+        let damage_dealt = self.attack_entity(random_damage, target);
+        // display the text for an attack
+        self.display_attack_text(target.name(), damage_dealt);
+
+        // no error
+        false
     }
 }
