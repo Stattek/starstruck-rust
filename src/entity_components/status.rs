@@ -72,4 +72,33 @@ impl Status {
     pub fn status_chance() -> f64 {
         0.2
     }
+
+    /// Create the status list for the game.
+    ///
+    /// # Returns
+    /// - The full status list for the game
+    pub fn create_status_list() -> Vec<Status> {
+        vec![
+            Status::new(String::from("Burn"), 10, false, 0, 5),
+            Status::new(String::from("Frostburn"), 12, false, 0, 5),
+        ]
+    }
+
+    /// Searches for a `Status` in a `Status` list vector.
+    ///
+    /// # Returns
+    /// - The `Status` that was found based on the name, or `None` if no `Status` was found.
+    pub fn get_status_from(target_name: &str, status_list: &Vec<Status>) -> Option<Status> {
+        let mut result: Option<Status> = None;
+
+        // go through the status list and find the one that matches our target string
+        for i in 0..status_list.len() {
+            if target_name == status_list[i].name() {
+                result = Some(status_list[i].clone());
+                break;
+            }
+        }
+
+        result
+    }
 }

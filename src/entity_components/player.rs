@@ -1,10 +1,13 @@
 use crate::entity_components::entity::Entity;
+use crate::entity_components::moves::Move;
 use crate::entity_components::moves::MoveType;
 use crate::entity_components::stats::Stats;
 use colored::Colorize;
 use std::io;
 
 use super::status::Status;
+
+const XP_TO_LEVEL_UP: u32 = 100;
 
 ///Struct to represent the Player.
 ///Implements the Entity trait
@@ -17,7 +20,6 @@ pub struct Player {
     stats: Stats,
     level: u32,
     xp: u32,
-    xp_to_next_level: u32,
     has_gone: bool,
     statuses: Vec<Status>,
 }
@@ -36,7 +38,6 @@ impl Player {
             stats,
             level,
             xp,
-            xp_to_next_level: level * 10,
             has_gone,
             statuses: Vec::new(), // start with no statuses
         }
@@ -47,8 +48,8 @@ impl Player {
         self.xp += amount;
 
         // for level-up chains
-        while self.xp >= 100 {
-            self.xp -= 100;
+        while self.xp >= XP_TO_LEVEL_UP {
+            self.xp -= XP_TO_LEVEL_UP;
             self.level_up();
         }
     }
@@ -113,6 +114,100 @@ impl Player {
         self.max_health = new_health;
         self.mana = new_mana;
         self.max_mana = new_mana;
+    }
+
+    /// Displays attack text for the `Player` attacking another `Entity`.
+    fn display_attack_text(&self, victim_entity_name: String, damage_dealt: u32) {
+        let mut output_str = String::new();
+        output_str.push_str("You did ");
+        output_str.push_str(damage_dealt.to_string().as_str());
+        output_str.push_str(" damage to ");
+        output_str.push_str(victim_entity_name.as_str());
+
+        println!("{}", output_str.red());
+    }
+
+    /// The `Player` performs a magic move against another `Entity`.
+    ///
+    /// # Params
+    /// - `target` - The target of the attack.
+    /// - `move_list` - The full move list, for finding the moves this `Player` can use.
+    pub fn magic_move(&mut self, target: &mut dyn Entity, move_list: &Vec<Move<'_>>) -> bool {
+        // get a list of moves that the player meets the requirements for
+        let move_list = Move::get_move_list(move_list, self.level);
+        let move_list_len = move_list.len(); // save the length to avoid borrowing moved value
+
+        // print all of the moves
+        for index in 0..move_list_len {
+            let cur_move = &move_list[index];
+
+            println!(
+                "{}:{} | Cost: {}",
+                (index + 1),
+                cur_move.name().on_blue().black(),
+                cur_move.cost()
+            )
+        }
+
+        // choose the move
+        let mut choice = -1;
+        while choice < 0
+            || choice >= (move_list_len as i32)
+            || move_list[choice as usize].cost() > self.mana
+        {
+            println!(
+                "{}",
+                "Choose a move (q/quit to go back):".on_white().black()
+            );
+
+            //take user input
+            let user_input = self.get_player_input();
+            if user_input.to_lowercase() == "q" || user_input.to_lowercase() == "quit" {
+                // player wants to stop choosing a magic move
+                return false;
+            }
+
+            //gives back -1 if the input is incorrect
+            choice = user_input.parse::<i32>().unwrap_or(-1) - 1; // minus one to get index
+
+            if choice >= 0
+                && choice < (move_list_len as i32)
+                && move_list[choice as usize].cost() > self.mana
+            {
+                println!("{}", "Move costs too much mana!".black().on_red());
+            }
+        }
+
+        let random_damage =
+            move_list[choice as usize].generate_random_amount(self.magic_strength());
+
+        let damage_dealt = self.attack_entity(random_damage, target);
+        // use the mana from this move
+        self.use_mana(move_list[choice as usize].cost());
+        // display the damage that was dealt
+        self.display_attack_text(target.name(), damage_dealt);
+
+        // roll for random chance to apply status if it exists
+        if move_list[choice as usize].roll_status_chance() {
+            target.apply_status(&move_list[choice as usize].get_status().unwrap());
+        }
+
+        // no error
+        true
+    }
+
+    pub fn defend_move(&mut self) -> bool {
+        self.start_defending();
+
+        // tell player that they started defending
+        let mut output_str = String::new();
+        output_str.push_str(self.name.as_str());
+        output_str.push_str(" began defending for 1 turn.");
+
+        println!("{}", output_str.green());
+
+        // no error
+        true
     }
 }
 
@@ -198,7 +293,7 @@ impl Entity for Player {
     ///Print the Player info
     fn print_info(&self) {
         println!(
-            "{}:\n\t{}{}\n\t{}{} / {}\n\t{}{} / {}",
+            "{}:\n\t{}{}\n\t{}{} / {}\n\t{}{} / {}\n\t{} {} / {}",
             self.name,
             "Level: ".blue(),
             self.level.to_string().on_blue(),
@@ -207,7 +302,10 @@ impl Entity for Player {
             self.max_health,
             "Mana: ".blue(),
             self.mana,
-            self.max_mana
+            self.max_mana,
+            "Experience".blue(),
+            self.xp,
+            XP_TO_LEVEL_UP
         );
     }
 
@@ -282,6 +380,19 @@ impl Entity for Player {
     }
 
     fn apply_status(&mut self, status: &Status) {
+        println!("{} appled to {}", status.name(), self.name);
         self.statuses.push(status.clone());
+    }
+
+    fn attack_move(&self, target: &mut dyn Entity) -> bool {
+        // attack the enemy with a random amount of damage
+        let random_damage = self.get_random_attack_dmg();
+
+        let damage_dealt = self.attack_entity(random_damage, target);
+        // display the damage dealt
+        self.display_attack_text(target.name(), damage_dealt);
+
+        // no error
+        true
     }
 }
