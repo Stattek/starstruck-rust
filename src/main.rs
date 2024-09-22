@@ -4,7 +4,7 @@ mod game;
 
 //imports
 use colored::Colorize;
-use entity_components::{entity::Entity, player::Player, stats::Stats};
+use entity_components::{enemy::Enemy, entity::Entity, player::Player, stats::Stats};
 use game::GameState;
 
 fn main() {
@@ -28,11 +28,8 @@ fn main() {
         false,
     );
 
-    //TODO: temporary code possibly
-    if true {
-        let mut the_game = GameState::new(player, None);
+    let mut the_game = GameState::new(player, None);
 
-        //play the game
-        the_game.game_loop();
-    }
+    //play the game
+    the_game.game_loop();
 }

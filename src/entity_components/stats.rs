@@ -3,10 +3,11 @@ use rand::random;
 const DEFENSE_AMOUNT: u32 = 50;
 
 ///struct for the stats of an entity
+#[derive(Clone)]
 pub struct Stats {
     health: u32,
     mana: u32,
-    speed: u32,
+    speed: u32, // TODO: might remove
     strength: u32,
     magic_strength: u32,
     defense: u32,
@@ -37,13 +38,13 @@ impl Stats {
     ///Generates the health of the entity
     pub fn calculate_max_health(&self) -> u32 {
         //TODO: change this with
-        (self.health as f32 * 5.5) as u32
+        (self.health as f64 * 5.5) as u32
     }
 
     ///Generates the mana of the entity
     pub fn calculate_max_mana(&self) -> u32 {
         //TODO: change this
-        (self.mana as f32 * 2.5) as u32
+        (self.mana as f64 * 2.5) as u32
     }
 
     ///Generates random attack damage based on stats
@@ -78,5 +79,18 @@ impl Stats {
             self.defense -= DEFENSE_AMOUNT;
             self.is_defending = false;
         }
+    }
+
+    pub fn increase_physical(&mut self) {
+        self.strength += 1;
+    }
+
+    pub fn increase_magic(&mut self) {
+        self.mana += 1;
+        self.magic_strength += 1;
+    }
+
+    pub fn increase_health(&mut self) {
+        self.health += 1;
     }
 }
