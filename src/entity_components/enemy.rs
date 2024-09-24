@@ -21,7 +21,13 @@ pub struct Enemy {
 const BASE_XP: u32 = 20; // the base xp dropped by an enemy
 
 impl Enemy {
-    ///create new enemy
+    /// Create a new `Enemy`
+    ///
+    /// # Params
+    /// - `name` - The name of the `Enemy`.
+    /// - `stats` - The `Stats` of the `Enemy`.
+    /// - `level` - The level of the `Enemy`
+    /// - `has_gone` - If this `Enemy` has gone this turn.
     pub fn new(name: String, stats: Stats, level: u32, has_gone: bool) -> Self {
         let starting_health = stats.calculate_max_health();
         let starting_mana = stats.calculate_max_mana();
@@ -38,6 +44,13 @@ impl Enemy {
         }
     }
 
+    /// Calculate the xp dropped by this `Enemy`.
+    ///
+    /// # Params
+    /// - `player_level` - The level of the player.
+    ///
+    /// # Returns
+    /// - The xp dropped by this `Enemy`.
     pub fn drop_xp(&self, player_level: u32) -> u32 {
         let mut amount = BASE_XP; // start with a base xp
 
@@ -51,6 +64,11 @@ impl Enemy {
         amount
     }
 
+    /// Display the text for attacking another `Entity`.
+    ///
+    /// # Params
+    /// - `victim_entity_name` - The name of the `Entity` that is receiving the attack.
+    /// - `damage_dealt` - The amount of damage dealt to this `Entity`.
     fn display_attack_text(&self, victim_entity_name: String, damage_dealt: u32) {
         let mut output_str = String::new();
         output_str.push_str(self.name.as_str());
@@ -87,7 +105,6 @@ impl Enemy {
 
 //entity implementation for enemy
 impl Entity for Enemy {
-    ///Make the Enemy take damage
     fn take_damage(&mut self, amount: u32) -> u32 {
         let damage_taken = self.stats.calc_damage_taken(amount);
 
@@ -100,12 +117,10 @@ impl Entity for Enemy {
         damage_taken
     }
 
-    ///Heal the Enemy
     fn heal(&mut self, amount: u32) {
         self.health += amount;
     }
 
-    ///Makes the Enemy use mana
     fn use_mana(&mut self, amount: u32) {
         if amount > self.mana {
             self.mana = 0;
@@ -114,23 +129,20 @@ impl Entity for Enemy {
         }
     }
 
-    ///Gets the speed of the Enemy
     fn speed(&self) -> u32 {
         self.stats.get_speed()
     }
 
-    ///Checks to see if the Enemy is dead
     fn is_dead(&self) -> bool {
         self.health == 0
     }
 
-    ///Checks to see if the Enemy has gone yet
     fn gone_this_turn(&self) -> bool {
         self.has_gone
     }
 
-    ///The Enemy makes a choice as to what type of move it wants to do this turn
-    /// FUTURE: implement AI for this
+    // The Enemy makes a choice as to what type of move it wants to do this turn
+    // FUTURE: implement AI for this
     fn get_turn_type(&mut self) -> Option<MoveType> {
         Some(MoveType::AttackMove)
     }
@@ -139,7 +151,6 @@ impl Entity for Enemy {
         self.stats.generate_random_attack_dmg()
     }
 
-    ///Print the Enemy info
     fn print_info(&self) {
         println!(
             "{}:\n\t{}{} / {}",
