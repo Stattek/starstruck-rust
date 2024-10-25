@@ -72,7 +72,7 @@ impl GameState {
         // TODO: this will cause issues if you want to start off with a specific enemy
         self.enemy = self.create_random_enemy(&enemy_list);
 
-        while self.is_playing {
+        loop {
             // each loop is a tick, with the player or enemy able to try attacking.
             // but they can only both go again once both of them have gone
 
@@ -100,6 +100,16 @@ impl GameState {
                             self.do_player_turn(&move_list, MoveType::DefendMove);
                         }
                         // nothing
+                        _ => {}
+                    },
+
+                    CurrentScreen::Exiting => match key.code {
+                        KeyCode::Char('y') => {
+                            break;
+                        }
+                        KeyCode::Char('n') => {
+                            self.current_screen = CurrentScreen::Main;
+                        }
                         _ => {}
                     },
 
@@ -354,10 +364,7 @@ impl GameState {
                 .borders(Borders::NONE)
                 .style(Style::default().bg(Color::DarkGray));
 
-            let exit_text = Text::styled(
-                "Would you like to output the buffer as json? (y/n)",
-                Style::default().fg(Color::Red),
-            );
+            let exit_text = Text::styled("Are you sure you want to quit? (y/n)", Style::default().fg(Color::Red));
             // the `trim: false` will stop the text from being cut off when over the edge of the block
             let exit_paragraph = Paragraph::new(exit_text)
                 .block(popup_block)
