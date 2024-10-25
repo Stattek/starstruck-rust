@@ -1,5 +1,6 @@
 use crate::entity_components::{entity::Entity, moves::MoveType, stats::Stats};
 use colored::Colorize;
+use ratatui::text;
 
 use super::status::Status;
 
@@ -69,15 +70,18 @@ impl Enemy {
     /// # Params
     /// - `victim_entity_name` - The name of the `Entity` that is receiving the attack.
     /// - `damage_dealt` - The amount of damage dealt to this `Entity`.
-    fn display_attack_text(&self, victim_entity_name: String, damage_dealt: u32) {
-        let mut output_str = String::new();
-        output_str.push_str(self.name.as_str());
-        output_str.push_str(" did ");
-        output_str.push_str(damage_dealt.to_string().as_str());
-        output_str.push_str(" damage to ");
-        output_str.push_str(victim_entity_name.as_str());
-
-        println!("{}", output_str.red());
+    fn display_attack_text(
+        &self,
+        victim_entity_name: String,
+        damage_dealt: u32,
+        text_vec: &mut Vec<String>,
+    ) {
+        text_vec.push(format!(
+            "{} did {} damage to {}",
+            self.name,
+            damage_dealt.to_string(),
+            victim_entity_name
+        ));
     }
 
     /// Create the enemy list for the game
@@ -233,15 +237,22 @@ impl Entity for Enemy {
         self.statuses.push(status.clone());
     }
 
-    fn attack_move(&self, target: &mut dyn Entity) -> bool {
+    fn attack_move(&mut self, target: &mut dyn Entity, text_vec: &mut Vec<String>) -> bool {
+        if self.has_gone {
+            return true; // has gone, error
+        }
         // attack the player with a random amount of damage
         let random_damage = self.get_random_attack_dmg();
 
         let damage_dealt = self.attack_entity(random_damage, target);
         // display the text for an attack
-        self.display_attack_text(target.name(), damage_dealt);
+        self.display_attack_text(target.name(), damage_dealt, text_vec);
 
         // no error
         false
+    }
+    
+    fn has_gone(&self) -> bool {
+        self.has_gone.clone()
     }
 }

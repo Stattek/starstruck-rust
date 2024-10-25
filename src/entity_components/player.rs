@@ -3,6 +3,8 @@ use crate::entity_components::moves::Move;
 use crate::entity_components::moves::MoveType;
 use crate::entity_components::stats::Stats;
 use colored::Colorize;
+use ratatui::text;
+use std::fmt::format;
 use std::io;
 
 use super::status::Status;
@@ -117,14 +119,17 @@ impl Player {
     }
 
     /// Displays attack text for the `Player` attacking another `Entity`.
-    fn display_attack_text(&self, victim_entity_name: String, damage_dealt: u32) {
-        let mut output_str = String::new();
-        output_str.push_str("You did ");
-        output_str.push_str(damage_dealt.to_string().as_str());
-        output_str.push_str(" damage to ");
-        output_str.push_str(victim_entity_name.as_str());
-
-        println!("{}", output_str.red());
+    fn display_attack_text(
+        &self,
+        victim_entity_name: String,
+        damage_dealt: u32,
+        text_vec: &mut Vec<String>,
+    ) {
+        text_vec.push(format!(
+            "You did {} damage to {}",
+            damage_dealt.to_string(),
+            victim_entity_name
+        ));
     }
 
     /// The `Player` performs a magic move against another `Entity`.
@@ -132,7 +137,12 @@ impl Player {
     /// # Params
     /// - `target` - The target of the attack.
     /// - `move_list` - The full move list, for finding the moves this `Player` can use.
-    pub fn magic_move(&mut self, target: &mut dyn Entity, move_list: &Vec<Move<'_>>) -> bool {
+    pub fn magic_move(
+        &mut self,
+        target: &mut dyn Entity,
+        move_list: &Vec<Move<'_>>,
+        text_vec: &mut Vec<String>,
+    ) -> bool {
         // get a list of moves that the player meets the requirements for
         let move_list = Move::get_move_list(move_list, self.level);
         let move_list_len = move_list.len(); // save the length to avoid borrowing moved value
@@ -185,7 +195,7 @@ impl Player {
         // use the mana from this move
         self.use_mana(move_list[choice as usize].cost());
         // display the damage that was dealt
-        self.display_attack_text(target.name(), damage_dealt);
+        self.display_attack_text(target.name(), damage_dealt, text_vec);
 
         // roll for random chance to apply status if it exists
         if move_list[choice as usize].roll_status_chance() {
@@ -263,12 +273,12 @@ impl Entity for Player {
 
         let mut choice = -1;
         while choice <= 0 || choice > (MoveType::NumMoveTypes as i32) {
-            println!(
-                "What do you want to do?\n\t1. {}\n\t2. {}\n\t3. {}",
-                "Attack".red(),
-                "Magic".blue(),
-                "Defend".white()
-            );
+            // println!(
+            //     "What do you want to do?\n\t1. {}\n\t2. {}\n\t3. {}",
+            //     "Attack".red(),
+            //     "Magic".blue(),
+            //     "Defend".white()
+            // );
 
             //take user input
             let user_input = self.get_player_input();
@@ -384,15 +394,25 @@ impl Entity for Player {
         self.statuses.push(status.clone());
     }
 
-    fn attack_move(&self, target: &mut dyn Entity) -> bool {
+    fn attack_move(&mut self, target: &mut dyn Entity, text_vec: &mut Vec<String>) -> bool {
+        if self.has_gone {
+            return false; // error, did not go
+        }
         // attack the enemy with a random amount of damage
         let random_damage = self.get_random_attack_dmg();
 
         let damage_dealt = self.attack_entity(random_damage, target);
         // display the damage dealt
-        self.display_attack_text(target.name(), damage_dealt);
+        self.display_attack_text(target.name(), damage_dealt, text_vec);
+
+        // the player has gone
+        self.has_gone = true;
 
         // no error
         true
+    }
+
+    fn has_gone(&self) -> bool {
+        self.has_gone.clone()
     }
 }
