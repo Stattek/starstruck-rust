@@ -7,6 +7,7 @@ use crate::entity_components::status::Status;
 use crate::entity_components::{entity::Entity, player::LevelUpType, player::Player, stats::Stats};
 use colored::Colorize;
 use rand::random;
+use ratatui::style::Styled;
 use ratatui::{
     backend::{Backend, CrosstermBackend},
     crossterm::{
@@ -26,6 +27,8 @@ use ratatui::{
 pub enum CurrentScreen {
     Main,       // Main gameplay screen
     LevelingUp, // player is leveling up
+    // Magic,      // choosing a magic move
+    Died, // player died
     Exiting,
 }
 
@@ -92,7 +95,7 @@ impl GameState {
                     CurrentScreen::Main => match key.code {
                         // stop playing
                         KeyCode::Char('q') => {
-                            self.last_screen = CurrentScreen::Main;
+                            self.last_screen = self.current_screen;
                             self.current_screen = CurrentScreen::Exiting;
                         }
                         // TODO: for attacking moves, give back some value to let the game know when to change screens (like when a player levels up)
@@ -113,7 +116,7 @@ impl GameState {
                     CurrentScreen::LevelingUp => {
                         match key.code {
                             KeyCode::Char('q') => {
-                                self.last_screen = CurrentScreen::LevelingUp; // so we can return back to this screen
+                                self.last_screen = self.current_screen; // so we can return back to this screen
                                 self.current_screen = CurrentScreen::Exiting;
                             }
                             KeyCode::Char('1') => {
@@ -133,7 +136,15 @@ impl GameState {
                         self.current_screen = CurrentScreen::Main;
                     }
 
-                    // TODO: make screen for levelup
+                    CurrentScreen::Died => match key.code {
+                        KeyCode::Char('q') => {
+                            self.last_screen = self.current_screen;
+                            self.current_screen = CurrentScreen::Exiting;
+                        }
+                        // nothing
+                        _ => {}
+                    },
+
                     // TODO: make screen for choosing magic skill
                     CurrentScreen::Exiting => match key.code {
                         KeyCode::Char('y') => {
@@ -173,8 +184,8 @@ impl GameState {
         self.player.stop_defending();
         self.enemy.stop_defending();
 
-        self.player.tick_statuses();
-        self.enemy.tick_statuses();
+        self.player.tick_statuses(&mut self.attack_text);
+        self.enemy.tick_statuses(&mut self.attack_text);
 
         self.player.allow_move();
         self.enemy.allow_move();
@@ -200,7 +211,7 @@ impl GameState {
                 }
 
                 MoveType::DefendMove => {
-                    self.player.defend_move();
+                    self.player.defend_move(&mut self.attack_text);
                 }
 
                 _ => {
@@ -246,14 +257,16 @@ impl GameState {
         let mut output = false;
 
         if self.player.is_dead() {
-            println!("{}", "\nYou died!".red().bold());
+            self.current_screen = CurrentScreen::Died;
             self.is_playing = false;
 
             // entity died
             output = true;
         } else if self.enemy.is_dead() {
-            println!("{}", "\nThe enemy died!".green());
-            let xp_dropped = self.enemy.drop_xp(self.player.level());
+            self.attack_text.push(String::from("The enemy died!"));
+            let xp_dropped = self
+                .enemy
+                .drop_xp(self.player.level(), &mut self.attack_text);
 
             if self.player.gain_xp(xp_dropped) {
                 self.current_screen = CurrentScreen::LevelingUp;
@@ -324,7 +337,7 @@ impl GameState {
         // Create the title of the program using a Paragraph widget (which is used to display only text)
         let title_block = Block::default()
             .borders(Borders::ALL)
-            .style(Style::default().fg(Color::Magenta));
+            .style(Style::default().fg(Color::Magenta).bg(Color::Black));
 
         // create a paragraph widget with text styled green
         let title = Paragraph::new(Text::styled(
@@ -348,7 +361,7 @@ impl GameState {
 
         let player_info_block = Block::default()
             .borders(Borders::ALL)
-            .style(Style::default().fg(Color::Blue));
+            .style(Style::default().fg(Color::Blue).bg(Color::Black));
 
         let player_info_vec = Vec::<ListItem>::from([
             ListItem::new(Line::styled(
@@ -382,7 +395,7 @@ impl GameState {
 
         let enemy_info_block = Block::new()
             .borders(Borders::ALL)
-            .border_style(Style::default().fg(Color::Red));
+            .style(Style::default().fg(Color::Red).bg(Color::Black));
 
         let enemy_info_vec = Vec::<ListItem>::from([
             ListItem::new(Line::styled(
@@ -402,7 +415,8 @@ impl GameState {
 
         frame.render_widget(enemy_ui_list, game_info_chunks[1]);
 
-        // now we create a vector of ListItems so we can see the key-value pairs
+        // now we create a vector of ListItems to display the game text
+        let game_text_block = Block::default().style(Style::default().bg(Color::Black));
         let mut list_items = Vec::<ListItem>::new();
 
         // loop through the key-value pairs and add them to the list
@@ -413,10 +427,10 @@ impl GameState {
             ))));
         }
 
-        let list = List::new(list_items);
+        let game_text_list = List::new(list_items).block(game_text_block);
 
         //render the list
-        frame.render_widget(list, chunks[2]);
+        frame.render_widget(game_text_list, chunks[2]);
 
         // create the bottom navigational bar
         // This has the current screen and what keybinds are available
@@ -427,6 +441,7 @@ impl GameState {
                 CurrentScreen::LevelingUp => {
                     Span::styled("Leveling up", Style::default().fg(Color::Blue))
                 }
+                CurrentScreen::Died => Span::styled("Died", Style::default().fg(Color::Red)),
                 CurrentScreen::Exiting => {
                     Span::styled("Exiting", Style::default().fg(Color::LightRed))
                 }
@@ -434,28 +449,35 @@ impl GameState {
             .to_owned(),
         ];
 
-        let mode_footer = Paragraph::new(Line::from(current_navigation_text))
-            .block(Block::default().borders(Borders::ALL));
+        let mode_footer = Paragraph::new(Line::from(current_navigation_text)).block(
+            Block::default()
+                .borders(Borders::ALL)
+                .style(Style::default().bg(Color::Black)),
+        );
 
         // Create a hint with available keys
         let current_keys_hint = {
             match self.current_screen {
                 CurrentScreen::Main => Span::styled(
-                    "1. Attack, 2. Magic, 3. Defend (q) to quit",
+                    "(1) Attack, (2) Magic, (3) Defend (q) to quit",
                     Style::default().fg(Color::Red),
                 ),
                 CurrentScreen::LevelingUp => Span::styled(
-                    "1. Strength, 2. Magic, 3. Health",
+                    "(1) Strength, (2) Magic, (3) Health",
                     Style::default().fg(Color::Blue),
                 ),
+                CurrentScreen::Died => Span::styled("(q) to quit", Style::default().fg(Color::Red)),
                 CurrentScreen::Exiting => {
                     Span::styled("(q) to quit", Style::default().fg(Color::Red))
                 }
             }
         };
 
-        let key_notes_footer = Paragraph::new(Line::from(current_keys_hint))
-            .block(Block::default().borders(Borders::ALL));
+        let key_notes_footer = Paragraph::new(Line::from(current_keys_hint)).block(
+            Block::default()
+                .borders(Borders::ALL)
+                .style(Style::default().bg(Color::Black)),
+        );
 
         let footer_chunks = Layout::default()
             .direction(Direction::Horizontal)
@@ -469,7 +491,7 @@ impl GameState {
         if let CurrentScreen::LevelingUp = self.current_screen {
             // create a block with a title and no borders
             let popup_block = Block::default()
-                .title("Enter a new key-value pair")
+                .title("Level up!")
                 .borders(Borders::NONE)
                 .style(Style::default().bg(Color::DarkGray));
 
@@ -478,11 +500,31 @@ impl GameState {
             frame.render_widget(popup_block, area);
 
             // show the player waht they have already entered
-            let mut level_up_block = Block::default().title("Level Up!").borders(Borders::ALL);
+            let level_up_block = Block::default().title("Level Up!").borders(Borders::ALL);
 
             let level_up_text = Paragraph::new("Choose a trait to level up!").block(level_up_block);
 
             frame.render_widget(level_up_text, area);
+        }
+
+        // popup if the player died
+        if let CurrentScreen::Died = self.current_screen {
+            // create a block with a title and no borders
+            let popup_block = Block::default()
+                .title("You died!")
+                .borders(Borders::NONE)
+                .style(Style::default().bg(Color::DarkGray));
+
+            // create a centered rectangle
+            let area = self.centered_rect(60, 25, frame.area());
+            frame.render_widget(popup_block, area);
+
+            // show the player waht they have already entered
+            let died_block = Block::default().title("You died!").borders(Borders::ALL);
+
+            let died_text = Paragraph::new("(q) to quit").block(died_block);
+
+            frame.render_widget(died_text, area);
         }
 
         // let the user choose to output the key-value pairs or close without printing anything

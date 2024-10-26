@@ -75,9 +75,6 @@ pub trait Entity {
     /// - A random attack damage number.
     fn get_random_attack_dmg(&self) -> u32;
 
-    /// Print the Entity info
-    fn print_info(&self);
-
     /// Makes this `Entity` attack another `Entity`.
     ///
     /// # Params
@@ -98,13 +95,13 @@ pub trait Entity {
     fn stop_defending(&mut self);
 
     /// Ticks all statuses in vector
-    fn tick_statuses(&mut self);
+    fn tick_statuses(&mut self, text_vec: &mut Vec<String>);
 
     /// Applies a status to this Entity.
     ///
     /// # Params
     /// - `status` The `Status` to apply to this `Entity`.
-    fn apply_status(&mut self, status: &Status);
+    fn apply_status(&mut self, status: &Status, text_vec: &mut Vec<String>);
 
     /// Entity does a physical attack against another `Entity`.
     ///

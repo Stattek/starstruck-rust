@@ -1,5 +1,4 @@
 use crate::entity_components::{entity::Entity, moves::MoveType, stats::Stats};
-use colored::Colorize;
 use ratatui::text;
 
 use super::status::Status;
@@ -52,7 +51,7 @@ impl Enemy {
     ///
     /// # Returns
     /// - The xp dropped by this `Enemy`.
-    pub fn drop_xp(&self, player_level: u32) -> u32 {
+    pub fn drop_xp(&self, player_level: u32, text_vec: &mut Vec<String>) -> u32 {
         let mut amount = BASE_XP; // start with a base xp
 
         let num_levels_above_player = self.level as i64 - player_level as i64;
@@ -60,7 +59,7 @@ impl Enemy {
             amount *= 2; // just crazy xp as enemies get way higher leveled than you
         }
 
-        println!("{} dropped {} xp!", self.name, amount.to_string().blue());
+        text_vec.push(format!("{} dropped {} xp!", self.name, amount));
 
         amount
     }
@@ -155,16 +154,6 @@ impl Entity for Enemy {
         self.stats.generate_random_attack_dmg()
     }
 
-    fn print_info(&self) {
-        println!(
-            "{}:\n\t{}{} / {}",
-            self.name,
-            "Health: ".green(),
-            self.health,
-            self.max_health
-        );
-    }
-
     fn name(&self) -> String {
         self.name.clone()
     }
@@ -185,7 +174,7 @@ impl Entity for Enemy {
         self.stats.stop_defending()
     }
 
-    fn tick_statuses(&mut self) {
+    fn tick_statuses(&mut self, text_vec: &mut Vec<String>) {
         let mut indicies_to_remove: Vec<usize> = Vec::new();
 
         for i in 0..self.statuses.len() {
@@ -199,25 +188,20 @@ impl Entity for Enemy {
             }
 
             if self.statuses[i].is_healing() {
-                // cursed println for text coloring
-                println!(
-                    "{} {} {} {} {}",
-                    self.name.red(),
-                    "healed".green(),
-                    amount.to_string().as_str().on_green(),
-                    "health from".green(),
-                    self.statuses[i].name().on_blue().black()
-                );
+                text_vec.push(format!(
+                    "{} healed {} health from {}!",
+                    self.name,
+                    amount.to_string().as_str(),
+                    self.statuses[i].name()
+                ));
                 self.heal(amount);
             } else {
-                println!(
-                    "{} {} {} {} {}",
-                    self.name.red(),
-                    "took".red(),
-                    amount.to_string().as_str().on_red(),
-                    "damage from".red(),
-                    self.statuses[i].name().on_blue().black()
-                );
+                text_vec.push(format!(
+                    "{} took {} damage from {}!",
+                    self.name,
+                    amount.to_string().as_str(),
+                    self.statuses[i].name()
+                ));
                 self.take_damage(amount);
             }
 
@@ -232,8 +216,8 @@ impl Entity for Enemy {
         }
     }
 
-    fn apply_status(&mut self, status: &Status) {
-        println!("{} appled to {}", status.name(), self.name());
+    fn apply_status(&mut self, status: &Status, text_vec: &mut Vec<String>) {
+        text_vec.push(format!("{} applied to {}", status.name(), self.name()));
         self.statuses.push(status.clone());
     }
 
