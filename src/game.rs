@@ -278,7 +278,8 @@ impl GameState {
             .direction(Direction::Vertical)
             .constraints([
                 Constraint::Length(3), // top segment is 3 lines tall
-                Constraint::Min(1), // the second section should never be smaller than one line tall but can expand if needed
+                Constraint::Min(4), // the second section should never be smaller than one line tall but can expand if needed
+                Constraint::Min(4), // third section
                 Constraint::Length(3), // bottom section is 3 lines tall
             ])
             .split(frame.area());
@@ -288,7 +289,7 @@ impl GameState {
         // Create the title of the program using a Paragraph widget (which is used to display only text)
         let title_block = Block::default()
             .borders(Borders::ALL)
-            .style(Style::default());
+            .style(Style::default().fg(Color::Magenta));
 
         // create a paragraph widget with text styled green
         let title = Paragraph::new(Text::styled(
@@ -300,6 +301,68 @@ impl GameState {
         // now we render it
         frame.render_widget(title, chunks[0]);
 
+        /* render the enemy and player health */
+        let game_info_chunks = Layout::default()
+            .direction(Direction::Horizontal)
+            .constraints([Constraint::Percentage(50), Constraint::Percentage(50)])
+            .split(chunks[1]);
+
+        let player_info_block = Block::default()
+            .borders(Borders::ALL)
+            .style(Style::default().fg(Color::Blue));
+
+        let player_info_vec = Vec::<ListItem>::from([
+            ListItem::new(Line::styled(
+                self.player.name(),
+                Style::default().fg(Color::Blue),
+            )),
+            ListItem::new(Line::styled(
+                format!(
+                    "    Health: {}/{}",
+                    self.player.health(),
+                    self.player.max_health()
+                ),
+                Style::default().fg(Color::Green),
+            )),
+            ListItem::new(Line::styled(
+                format!("    Level: {}", self.player.level(),),
+                Style::default().fg(Color::Blue),
+            )),
+            ListItem::new(Line::styled(
+                format!(
+                    "    Experience: {}/{}",
+                    self.player.experience(),
+                    self.player.max_experience()
+                ),
+                Style::default().fg(Color::Blue),
+            )),
+        ]);
+        let player_ui_list = List::new(player_info_vec).block(player_info_block);
+
+        frame.render_widget(player_ui_list, game_info_chunks[0]);
+
+        let enemy_info_block = Block::new()
+            .borders(Borders::ALL)
+            .border_style(Style::default().fg(Color::Red));
+
+        let enemy_info_vec = Vec::<ListItem>::from([
+            ListItem::new(Line::styled(
+                self.enemy.name(),
+                Style::default().fg(Color::Red),
+            )),
+            ListItem::new(Line::styled(
+                format!(
+                    "    Health: {}/{}",
+                    self.enemy.health(),
+                    self.enemy.max_health()
+                ),
+                Style::default().fg(Color::Green),
+            )),
+        ]);
+        let enemy_ui_list = List::new(enemy_info_vec).block(enemy_info_block);
+
+        frame.render_widget(enemy_ui_list, game_info_chunks[1]);
+
         // now we create a vector of ListItems so we can see the key-value pairs
         let mut list_items = Vec::<ListItem>::new();
 
@@ -307,14 +370,14 @@ impl GameState {
         for element in &self.attack_text {
             list_items.push(ListItem::new(Line::from(Span::styled(
                 element,
-                Style::default().fg(Color::White),
+                Style::default().fg(Color::Yellow),
             ))));
         }
 
         let list = List::new(list_items);
 
         //render the list
-        frame.render_widget(list, chunks[1]);
+        frame.render_widget(list, chunks[2]);
 
         // create the bottom navigational bar
         // This has the current screen and what keybinds are available
@@ -350,7 +413,7 @@ impl GameState {
         let footer_chunks = Layout::default()
             .direction(Direction::Horizontal)
             .constraints([Constraint::Percentage(50), Constraint::Percentage(50)])
-            .split(chunks[2]);
+            .split(chunks[3]);
 
         // render footer paragraphs in their appropriate spaces
         frame.render_widget(mode_footer, footer_chunks[0]);
@@ -364,7 +427,10 @@ impl GameState {
                 .borders(Borders::NONE)
                 .style(Style::default().bg(Color::DarkGray));
 
-            let exit_text = Text::styled("Are you sure you want to quit? (y/n)", Style::default().fg(Color::Red));
+            let exit_text = Text::styled(
+                "Are you sure you want to quit? (y/n)",
+                Style::default().fg(Color::Red),
+            );
             // the `trim: false` will stop the text from being cut off when over the edge of the block
             let exit_paragraph = Paragraph::new(exit_text)
                 .block(popup_block)

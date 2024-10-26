@@ -35,7 +35,7 @@ fn main() -> Result<(), Box<dyn Error>> {
         false,
     );
     let mut the_game = GameState::new(player, None);
-    the_game.game_loop(&mut terminal);
+    the_game.game_loop(&mut terminal)?;
 
     // undo changes made to the user's terminal to exit
     // NOTE: if an application exits without running this closing biolerplate, the terminal will act very strange,
