@@ -117,4 +117,7 @@ pub trait Entity {
 
     /// Returns if the entity has gone this turn yet.
     fn has_gone(&self) -> bool;
+
+    fn health(&self) -> u32;
+    fn max_health(&self) -> u32;
 }

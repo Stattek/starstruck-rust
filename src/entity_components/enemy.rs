@@ -251,8 +251,16 @@ impl Entity for Enemy {
         // no error
         false
     }
-    
+
     fn has_gone(&self) -> bool {
         self.has_gone.clone()
+    }
+
+    fn health(&self) -> u32 {
+        self.health.clone()
+    }
+
+    fn max_health(&self) -> u32 {
+        self.max_health.clone()
     }
 }

@@ -219,6 +219,14 @@ impl Player {
         // no error
         true
     }
+
+    pub fn experience(&self) -> u32 {
+        self.xp
+    }
+
+    pub fn max_experience(&self) -> u32 {
+        XP_TO_LEVEL_UP
+    }
 }
 
 //entity implementation for player
@@ -413,6 +421,14 @@ impl Entity for Player {
     }
 
     fn has_gone(&self) -> bool {
-        self.has_gone.clone()
+        self.has_gone
+    }
+
+    fn health(&self) -> u32 {
+        self.health
+    }
+
+    fn max_health(&self) -> u32 {
+        self.max_health
     }
 }
