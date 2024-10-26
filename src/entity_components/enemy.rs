@@ -248,6 +248,9 @@ impl Entity for Enemy {
         // display the text for an attack
         self.display_attack_text(target.name(), damage_dealt, text_vec);
 
+        // the enemy has gone
+        self.has_gone = true;
+
         // no error
         false
     }
@@ -262,5 +265,10 @@ impl Entity for Enemy {
 
     fn max_health(&self) -> u32 {
         self.max_health.clone()
+    }
+
+    fn allow_move(&mut self) {
+        // we can move again
+        self.has_gone = false;
     }
 }

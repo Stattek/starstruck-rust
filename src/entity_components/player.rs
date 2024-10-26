@@ -431,4 +431,9 @@ impl Entity for Player {
     fn max_health(&self) -> u32 {
         self.max_health
     }
+
+    fn allow_move(&mut self) {
+        // we can move again
+        self.has_gone = false;
+    }
 }

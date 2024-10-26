@@ -90,6 +90,7 @@ impl GameState {
                         KeyCode::Char('q') => {
                             self.current_screen = CurrentScreen::Exiting;
                         }
+                        // TODO: for attacking moves, give back some value to let the game know when to change screens (like when a player levels up)
                         KeyCode::Char('1') => {
                             self.do_player_turn(&move_list, MoveType::AttackMove);
                         }
@@ -103,6 +104,8 @@ impl GameState {
                         _ => {}
                     },
 
+                    // TODO: make screen for levelup
+                    // TODO: make screen for choosing magic skill
                     CurrentScreen::Exiting => match key.code {
                         KeyCode::Char('y') => {
                             break;
@@ -143,6 +146,9 @@ impl GameState {
 
         self.player.tick_statuses();
         self.enemy.tick_statuses();
+
+        self.player.allow_move();
+        self.enemy.allow_move();
     }
 
     fn print_basic_hud(&self) {
@@ -154,7 +160,9 @@ impl GameState {
 
     fn do_player_turn(&mut self, move_list: &Vec<Move>, turn_type: MoveType) {
         // if the  is faster and hasn't gone yet
-        if self.player.speed() >= self.enemy.speed() && !self.player.has_gone() {
+        if (self.player.speed() >= self.enemy.speed() && !self.player.has_gone())
+            || (self.enemy.has_gone() && !self.player.has_gone())
+        {
             // do the action that the player wishes.
             // It is possible that these actions fail, due to the Player already having gone.
             // In this case, nothing occurs.
@@ -184,7 +192,9 @@ impl GameState {
     // TODO: move code for this into the Enemy struct to avoid spaghetti code
     fn do_enemy_turn(&mut self) {
         // if the enemy is faster and hasn't gone yet
-        if self.enemy.speed() > self.player.speed() && !self.enemy.has_gone() {
+        if (self.enemy.speed() > self.player.speed() && !self.enemy.has_gone())
+            || (self.player.has_gone() && !self.enemy.has_gone())
+        {
             //get the turn type
             if let Some(turn_type) = self.enemy.get_turn_type() {
                 match turn_type {
