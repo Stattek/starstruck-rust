@@ -277,7 +277,7 @@ impl GameState {
         let chunks = Layout::default()
             .direction(Direction::Vertical)
             .constraints([
-                Constraint::Length(3), // top segment is 3 lines tall
+                Constraint::Length(7), // top segment is 7 lines tall
                 Constraint::Min(4), // the second section should never be smaller than one line tall but can expand if needed
                 Constraint::Min(4), // third section
                 Constraint::Length(3), // bottom section is 3 lines tall
@@ -293,9 +293,13 @@ impl GameState {
 
         // create a paragraph widget with text styled green
         let title = Paragraph::new(Text::styled(
-            "Starstruck",
-            Style::default().fg(Color::Magenta).bg(Color::Black),
+            " ___ _               _               _   \n\
+/ __| |_ __ _ _ _ __| |_ _ _ _  _ __| |__\n\
+\\__ \\  _/ _` | '_(_-<  _| '_| || / _| / /\n\
+|___/\\__\\__,_|_| /__/\\__|_|  \\_,_\\__|_\\_\\",
+            Style::default().fg(Color::Magenta),
         ))
+        .centered()
         .block(title_block); // tells it that we want to be part of the title_block
 
         // now we render it
