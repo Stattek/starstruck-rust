@@ -120,4 +120,6 @@ pub trait Entity {
 
     fn health(&self) -> u32;
     fn max_health(&self) -> u32;
+
+    fn allow_move(&mut self);
 }
