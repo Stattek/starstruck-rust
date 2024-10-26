@@ -26,6 +26,12 @@ pub struct Player {
     statuses: Vec<Status>,
 }
 
+pub enum LevelUpType {
+    Strength,
+    Magic,
+    Health,
+}
+
 impl Player {
     pub fn new(name: String, stats: Stats, level: u32, xp: u32, has_gone: bool) -> Self {
         // start with this mana and hp
@@ -45,15 +51,22 @@ impl Player {
         }
     }
 
-    ///Makes the Player gain xp and level up if they reach 100 xp
-    pub fn gain_xp(&mut self, amount: u32) {
+    /// Makes the Player gain xp and level up if they reach the xp to level up.
+    ///
+    /// # Returns
+    /// - `true` if the `Player` is ready to level up, `false` otherwise
+    pub fn gain_xp(&mut self, amount: u32) -> bool {
+        let mut is_leveling_up = false;
+
         self.xp += amount;
 
         // for level-up chains
         while self.xp >= XP_TO_LEVEL_UP {
             self.xp -= XP_TO_LEVEL_UP;
-            self.level_up();
+            is_leveling_up = true;
         }
+
+        is_leveling_up
     }
 
     /// Take input from the user.
@@ -70,40 +83,14 @@ impl Player {
     }
 
     /// The player levels up and gets to choose stats to increase
-    fn level_up(&mut self) {
+    pub fn level_up(&mut self, level_type: LevelUpType) {
         // increment level
         self.level += 1;
-        println!(
-            "Choose a stat to increase:\n1. {}\n2. {}\n3. {}",
-            "Strength".yellow(),
-            "Magic".blue(),
-            "Health".red()
-        );
 
-        let mut user_input = self.get_player_input();
-
-        let mut choice = user_input.parse::<i32>().unwrap_or(-1);
-
-        while choice <= 0 || choice > 3 {
-            println!(
-                "Choose a stat to increase:\n1. {}\n2. {}\n3. {}",
-                "Strength".yellow(),
-                "Magic".blue(),
-                "Health".red()
-            );
-
-            //take user input
-            user_input = self.get_player_input();
-
-            //gives back -1 if the input is incorrect
-            choice = user_input.parse::<i32>().unwrap_or(-1);
-        }
-
-        match choice {
-            1 => self.stats.increase_physical(),
-            2 => self.stats.increase_magic(),
-            3 => self.stats.increase_health(),
-            _ => panic!("Invalid choice"), // just panic if we get an invalid answer
+        match level_type {
+            LevelUpType::Strength => self.stats.increase_physical(),
+            LevelUpType::Magic => self.stats.increase_magic(),
+            LevelUpType::Health => self.stats.increase_health(),
         }
         self.reset_stats();
     }
