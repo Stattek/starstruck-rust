@@ -4,7 +4,7 @@ use std::{error::Error, io};
 use crate::entity_components::enemy::Enemy;
 use crate::entity_components::moves::{ElementType, Move, MoveType};
 use crate::entity_components::status::Status;
-use crate::entity_components::{entity::Entity, player::Player, stats::Stats};
+use crate::entity_components::{entity::Entity, player::LevelUpType, player::Player, stats::Stats};
 use colored::Colorize;
 use rand::random;
 use ratatui::{
@@ -22,8 +22,10 @@ use ratatui::{
 };
 
 /// This keeps track of the current screen that the app is on.
+#[derive(Clone, Copy)]
 pub enum CurrentScreen {
-    Main, // Main gameplay screen
+    Main,       // Main gameplay screen
+    LevelingUp, // player is leveling up
     Exiting,
 }
 
@@ -36,6 +38,7 @@ pub struct GameState {
     // TUI
     current_screen: CurrentScreen,
     attack_text: Vec<String>, // TODO: should there be a sane limit to this vector?
+    last_screen: CurrentScreen, // Last screen to return to from the current (in case we need to)
 }
 
 impl GameState {
@@ -58,6 +61,7 @@ impl GameState {
             is_playing,
             current_screen: CurrentScreen::Main,
             attack_text: Vec::<String>::new(),
+            last_screen: CurrentScreen::Main,
         }
     }
 
@@ -88,6 +92,7 @@ impl GameState {
                     CurrentScreen::Main => match key.code {
                         // stop playing
                         KeyCode::Char('q') => {
+                            self.last_screen = CurrentScreen::Main;
                             self.current_screen = CurrentScreen::Exiting;
                         }
                         // TODO: for attacking moves, give back some value to let the game know when to change screens (like when a player levels up)
@@ -104,6 +109,30 @@ impl GameState {
                         _ => {}
                     },
 
+                    // leveling up
+                    CurrentScreen::LevelingUp => {
+                        match key.code {
+                            KeyCode::Char('q') => {
+                                self.last_screen = CurrentScreen::LevelingUp; // so we can return back to this screen
+                                self.current_screen = CurrentScreen::Exiting;
+                            }
+                            KeyCode::Char('1') => {
+                                self.player.level_up(LevelUpType::Strength);
+                            }
+                            KeyCode::Char('2') => {
+                                self.player.level_up(LevelUpType::Magic);
+                            }
+                            KeyCode::Char('3') => {
+                                self.player.level_up(LevelUpType::Health);
+                            }
+                            // nothing
+                            _ => {}
+                        }
+
+                        // after we have chosen one of these, we now go back to the normal game
+                        self.current_screen = CurrentScreen::Main;
+                    }
+
                     // TODO: make screen for levelup
                     // TODO: make screen for choosing magic skill
                     CurrentScreen::Exiting => match key.code {
@@ -111,7 +140,7 @@ impl GameState {
                             break;
                         }
                         KeyCode::Char('n') => {
-                            self.current_screen = CurrentScreen::Main;
+                            self.current_screen = self.last_screen;
                         }
                         _ => {}
                     },
@@ -149,13 +178,6 @@ impl GameState {
 
         self.player.allow_move();
         self.enemy.allow_move();
-    }
-
-    fn print_basic_hud(&self) {
-        // print info
-        println!(); // make a new line now
-        self.player.print_info();
-        self.enemy.print_info();
     }
 
     fn do_player_turn(&mut self, move_list: &Vec<Move>, turn_type: MoveType) {
@@ -232,7 +254,10 @@ impl GameState {
         } else if self.enemy.is_dead() {
             println!("{}", "\nThe enemy died!".green());
             let xp_dropped = self.enemy.drop_xp(self.player.level());
-            self.player.gain_xp(xp_dropped);
+
+            if self.player.gain_xp(xp_dropped) {
+                self.current_screen = CurrentScreen::LevelingUp;
+            }
 
             // create the enemy after the xp is dropped
             self.enemy = self.create_random_enemy(&enemy_list);
@@ -398,8 +423,9 @@ impl GameState {
         let current_navigation_text = vec![
             // The first half of the text
             match self.current_screen {
-                CurrentScreen::Main => {
-                    Span::styled("Normal Mode", Style::default().fg(Color::Green))
+                CurrentScreen::Main => Span::styled("Playing", Style::default().fg(Color::Green)),
+                CurrentScreen::LevelingUp => {
+                    Span::styled("Leveling up", Style::default().fg(Color::Blue))
                 }
                 CurrentScreen::Exiting => {
                     Span::styled("Exiting", Style::default().fg(Color::LightRed))
@@ -414,7 +440,14 @@ impl GameState {
         // Create a hint with available keys
         let current_keys_hint = {
             match self.current_screen {
-                CurrentScreen::Main => Span::styled("(q) to quit", Style::default().fg(Color::Red)),
+                CurrentScreen::Main => Span::styled(
+                    "1. Attack, 2. Magic, 3. Defend (q) to quit",
+                    Style::default().fg(Color::Red),
+                ),
+                CurrentScreen::LevelingUp => Span::styled(
+                    "1. Strength, 2. Magic, 3. Health",
+                    Style::default().fg(Color::Blue),
+                ),
                 CurrentScreen::Exiting => {
                     Span::styled("(q) to quit", Style::default().fg(Color::Red))
                 }
@@ -432,6 +465,25 @@ impl GameState {
         // render footer paragraphs in their appropriate spaces
         frame.render_widget(mode_footer, footer_chunks[0]);
         frame.render_widget(key_notes_footer, footer_chunks[1]);
+
+        if let CurrentScreen::LevelingUp = self.current_screen {
+            // create a block with a title and no borders
+            let popup_block = Block::default()
+                .title("Enter a new key-value pair")
+                .borders(Borders::NONE)
+                .style(Style::default().bg(Color::DarkGray));
+
+            // create a centered rectangle
+            let area = self.centered_rect(60, 25, frame.area());
+            frame.render_widget(popup_block, area);
+
+            // show the player waht they have already entered
+            let mut level_up_block = Block::default().title("Level Up!").borders(Borders::ALL);
+
+            let level_up_text = Paragraph::new("Choose a trait to level up!").block(level_up_block);
+
+            frame.render_widget(level_up_text, area);
+        }
 
         // let the user choose to output the key-value pairs or close without printing anything
         if let CurrentScreen::Exiting = self.current_screen {
