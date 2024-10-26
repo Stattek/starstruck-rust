@@ -130,6 +130,9 @@ impl Player {
         move_list: &Vec<Move<'_>>,
         text_vec: &mut Vec<String>,
     ) -> bool {
+        if self.has_gone {
+            return false; //error
+        }
         // get a list of moves that the player meets the requirements for
         let move_list = Move::get_move_list(move_list, self.level);
         let move_list_len = move_list.len(); // save the length to avoid borrowing moved value
@@ -186,14 +189,17 @@ impl Player {
 
         // roll for random chance to apply status if it exists
         if move_list[choice as usize].roll_status_chance() {
-            target.apply_status(&move_list[choice as usize].get_status().unwrap());
+            target.apply_status(&move_list[choice as usize].get_status().unwrap(), text_vec);
         }
 
         // no error
         true
     }
 
-    pub fn defend_move(&mut self) -> bool {
+    pub fn defend_move(&mut self, text_vec: &mut Vec<String>) -> bool {
+        if self.has_gone {
+            return false;
+        }
         self.start_defending();
 
         // tell player that they started defending
@@ -201,7 +207,7 @@ impl Player {
         output_str.push_str(self.name.as_str());
         output_str.push_str(" began defending for 1 turn.");
 
-        println!("{}", output_str.green());
+        text_vec.push(format!("{} began defending for 1 turn.", self.name));
 
         // no error
         true
@@ -262,19 +268,12 @@ impl Entity for Player {
 
     ///Player chooses attack type, and it is returned.
     ///
-    /// # FUTURE: Move this to GameState
+    /// # NOTE: This method is now defunct
     fn get_turn_type(&mut self) -> Option<MoveType> {
         self.has_gone = true;
 
         let mut choice = -1;
         while choice <= 0 || choice > (MoveType::NumMoveTypes as i32) {
-            // println!(
-            //     "What do you want to do?\n\t1. {}\n\t2. {}\n\t3. {}",
-            //     "Attack".red(),
-            //     "Magic".blue(),
-            //     "Defend".white()
-            // );
-
             //take user input
             let user_input = self.get_player_input();
 
@@ -293,25 +292,6 @@ impl Entity for Player {
 
     fn get_random_attack_dmg(&self) -> u32 {
         self.stats.generate_random_attack_dmg()
-    }
-
-    ///Print the Player info
-    fn print_info(&self) {
-        println!(
-            "{}:\n\t{}{}\n\t{}{} / {}\n\t{}{} / {}\n\t{} {} / {}",
-            self.name,
-            "Level: ".blue(),
-            self.level.to_string().on_blue(),
-            "Health: ".green(),
-            self.health,
-            self.max_health,
-            "Mana: ".blue(),
-            self.mana,
-            self.max_mana,
-            "Experience".blue(),
-            self.xp,
-            XP_TO_LEVEL_UP
-        );
     }
 
     /// Get the name of the Player
@@ -337,7 +317,7 @@ impl Entity for Player {
     }
 
     /// Ticks statuses and goes through the list
-    fn tick_statuses(&mut self) {
+    fn tick_statuses(&mut self, text_vec: &mut Vec<String>) {
         let mut indicies_to_remove: Vec<usize> = Vec::new();
 
         for i in 0..self.statuses.len() {
@@ -351,24 +331,20 @@ impl Entity for Player {
 
             // print what the status effect did and apply effect
             if self.statuses[i].is_healing() {
-                println!(
-                    "{} {} {} {} {}",
-                    self.name.green(),
-                    "healed".green(),
-                    amount.to_string().as_str().on_green(),
-                    "health from".green(),
-                    self.statuses[i].name().on_blue().black()
-                );
+                text_vec.push(format!(
+                    "{} healed {} health from {}",
+                    self.name,
+                    amount,
+                    self.statuses[i].name()
+                ));
                 self.heal(amount);
             } else {
-                println!(
-                    "{} {} {} {} {}",
-                    self.name.green(),
-                    "took".red(),
-                    amount.to_string().as_str().on_red(),
-                    "damage from".red(),
-                    self.statuses[i].name().on_blue().black()
-                );
+                text_vec.push(format!(
+                    "{} took {} damage from {}",
+                    self.name,
+                    amount,
+                    self.statuses[i].name()
+                ));
                 self.take_damage(amount);
             }
         }
@@ -384,8 +360,8 @@ impl Entity for Player {
         }
     }
 
-    fn apply_status(&mut self, status: &Status) {
-        println!("{} appled to {}", status.name(), self.name);
+    fn apply_status(&mut self, status: &Status, text_vec: &mut Vec<String>) {
+        text_vec.push(format!("{} applied to {}", status.name(), self.name));
         self.statuses.push(status.clone());
     }
 
