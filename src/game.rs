@@ -497,6 +497,7 @@ impl GameState {
 
             // create a centered rectangle
             let area = self.centered_rect(60, 25, frame.area());
+            frame.render_widget(Clear, area);
             frame.render_widget(popup_block, area);
 
             // show the player waht they have already entered

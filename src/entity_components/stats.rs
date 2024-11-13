@@ -51,7 +51,7 @@ impl Stats {
     pub fn generate_random_attack_dmg(&self) -> u32 {
         // TODO: random crits?
 
-        // strength + (random number between 0 and strength/2)
+        // strength + (random number between 0 and strength / 2)
         self.strength + (random::<u32>() % (self.strength / 2))
     }
 
