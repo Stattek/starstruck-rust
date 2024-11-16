@@ -4,6 +4,7 @@ use crate::entity_components::moves::MoveType;
 use crate::entity_components::stats::Stats;
 use colored::Colorize;
 use ratatui::text;
+use std::collections::VecDeque;
 use std::fmt::format;
 use std::io;
 
@@ -110,9 +111,9 @@ impl Player {
         &self,
         victim_entity_name: String,
         damage_dealt: u32,
-        text_vec: &mut Vec<String>,
+        text_vec: &mut VecDeque<String>,
     ) {
-        text_vec.push(format!(
+        text_vec.push_back(format!(
             "You did {} damage to {}",
             damage_dealt.to_string(),
             victim_entity_name
@@ -128,7 +129,7 @@ impl Player {
         &mut self,
         target: &mut dyn Entity,
         move_list: &Vec<Move<'_>>,
-        text_vec: &mut Vec<String>,
+        text_vec: &mut VecDeque<String>,
     ) -> bool {
         if self.has_gone {
             return false; //error
@@ -196,7 +197,7 @@ impl Player {
         true
     }
 
-    pub fn defend_move(&mut self, text_vec: &mut Vec<String>) -> bool {
+    pub fn defend_move(&mut self, text_vec: &mut VecDeque<String>) -> bool {
         if self.has_gone {
             return false;
         }
@@ -207,7 +208,7 @@ impl Player {
         output_str.push_str(self.name.as_str());
         output_str.push_str(" began defending for 1 turn.");
 
-        text_vec.push(format!("{} began defending for 1 turn.", self.name));
+        text_vec.push_back(format!("{} began defending for 1 turn.", self.name));
 
         // no error
         true
@@ -317,7 +318,7 @@ impl Entity for Player {
     }
 
     /// Ticks statuses and goes through the list
-    fn tick_statuses(&mut self, text_vec: &mut Vec<String>) {
+    fn tick_statuses(&mut self, text_vec: &mut VecDeque<String>) {
         let mut indicies_to_remove: Vec<usize> = Vec::new();
 
         for i in 0..self.statuses.len() {
@@ -331,7 +332,7 @@ impl Entity for Player {
 
             // print what the status effect did and apply effect
             if self.statuses[i].is_healing() {
-                text_vec.push(format!(
+                text_vec.push_back(format!(
                     "{} healed {} health from {}",
                     self.name,
                     amount,
@@ -339,7 +340,7 @@ impl Entity for Player {
                 ));
                 self.heal(amount);
             } else {
-                text_vec.push(format!(
+                text_vec.push_back(format!(
                     "{} took {} damage from {}",
                     self.name,
                     amount,
@@ -360,12 +361,12 @@ impl Entity for Player {
         }
     }
 
-    fn apply_status(&mut self, status: &Status, text_vec: &mut Vec<String>) {
-        text_vec.push(format!("{} applied to {}", status.name(), self.name));
+    fn apply_status(&mut self, status: &Status, text_vec: &mut VecDeque<String>) {
+        text_vec.push_back(format!("{} applied to {}", status.name(), self.name));
         self.statuses.push(status.clone());
     }
 
-    fn attack_move(&mut self, target: &mut dyn Entity, text_vec: &mut Vec<String>) -> bool {
+    fn attack_move(&mut self, target: &mut dyn Entity, text_vec: &mut VecDeque<String>) -> bool {
         if self.has_gone {
             return false; // error, did not go
         }
