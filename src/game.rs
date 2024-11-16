@@ -1,3 +1,4 @@
+use std::collections::VecDeque;
 //simple turn-based game logic
 use std::{error::Error, io};
 
@@ -8,6 +9,7 @@ use crate::entity_components::{entity::Entity, player::LevelUpType, player::Play
 use colored::Colorize;
 use rand::random;
 use ratatui::style::Styled;
+use ratatui::widgets::{ListState, StatefulWidget};
 use ratatui::{
     backend::{Backend, CrosstermBackend},
     crossterm::{
@@ -21,6 +23,8 @@ use ratatui::{
     widgets::{Block, Borders, Clear, List, ListItem, Paragraph, Wrap},
     Frame, Terminal,
 };
+
+const MAX_ATTACK_STR_LEN: usize = 200;
 
 /// This keeps track of the current screen that the app is on.
 #[derive(Clone, Copy)]
@@ -40,8 +44,9 @@ pub struct GameState {
 
     // TUI
     current_screen: CurrentScreen,
-    attack_text: Vec<String>, // TODO: should there be a sane limit to this vector?
-    last_screen: CurrentScreen, // Last screen to return to from the current (in case we need to)
+    cur_attack_text_idx: usize,
+    attack_text: VecDeque<String>, // NOTE: always push_front() to this.
+    last_screen: CurrentScreen,    // Last screen to return to from the current (in case we need to)
 }
 
 impl GameState {
@@ -63,7 +68,8 @@ impl GameState {
             enemy: the_enemy,
             is_playing,
             current_screen: CurrentScreen::Main,
-            attack_text: Vec::<String>::new(),
+            cur_attack_text_idx: 0, // start at the first index
+            attack_text: VecDeque::<String>::new(),
             last_screen: CurrentScreen::Main,
         }
     }
@@ -165,6 +171,7 @@ impl GameState {
 
             // do cleanup if both the player and enemy have gone
             self.perform_entity_check(&enemy_list);
+            self.truncate_attack_text();
         }
 
         Ok(())
@@ -175,6 +182,16 @@ impl GameState {
         if self.player.has_gone() && self.enemy.has_gone() {
             self.end_turn();
             self.check_entities(enemy_list);
+        }
+    }
+
+    /// Truncates the attack text list so it doesn't overflow
+    /// memory if the history gets too long.
+    fn truncate_attack_text(&mut self) {
+        let mut cur_len = self.attack_text.len();
+        while cur_len > MAX_ATTACK_STR_LEN {
+            self.attack_text.pop_front();
+            cur_len = self.attack_text.len();
         }
     }
 
@@ -263,7 +280,7 @@ impl GameState {
             // entity died
             output = true;
         } else if self.enemy.is_dead() {
-            self.attack_text.push(String::from("The enemy died!"));
+            self.attack_text.push_back(String::from("The enemy died!"));
             let xp_dropped = self
                 .enemy
                 .drop_xp(self.player.level(), &mut self.attack_text);
@@ -427,10 +444,11 @@ impl GameState {
             ))));
         }
 
+        let mut game_text_state = ListState::default().with_selected(Some(self.attack_text.len()));
         let game_text_list = List::new(list_items).block(game_text_block);
 
         //render the list
-        frame.render_widget(game_text_list, chunks[2]);
+        frame.render_stateful_widget(game_text_list, chunks[2], &mut game_text_state);
 
         // create the bottom navigational bar
         // This has the current screen and what keybinds are available

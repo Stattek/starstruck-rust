@@ -1,3 +1,5 @@
+use std::collections::VecDeque;
+
 ///Represents the type of move that an entity is making
 use crate::entity_components::moves::MoveType;
 
@@ -95,13 +97,13 @@ pub trait Entity {
     fn stop_defending(&mut self);
 
     /// Ticks all statuses in vector
-    fn tick_statuses(&mut self, text_vec: &mut Vec<String>);
+    fn tick_statuses(&mut self, text_vec: &mut VecDeque<String>);
 
     /// Applies a status to this Entity.
     ///
     /// # Params
     /// - `status` The `Status` to apply to this `Entity`.
-    fn apply_status(&mut self, status: &Status, text_vec: &mut Vec<String>);
+    fn apply_status(&mut self, status: &Status, text_vec: &mut VecDeque<String>);
 
     /// Entity does a physical attack against another `Entity`.
     ///
@@ -110,7 +112,7 @@ pub trait Entity {
     ///
     /// # Returns
     /// - `true` if the move was done, `false` if the move was not done (in case the move was canceled).
-    fn attack_move(&mut self, target: &mut dyn Entity, text_vec: &mut Vec<String>) -> bool;
+    fn attack_move(&mut self, target: &mut dyn Entity, text_vec: &mut VecDeque<String>) -> bool;
 
     /// Returns if the entity has gone this turn yet.
     fn has_gone(&self) -> bool;
