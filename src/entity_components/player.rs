@@ -2,15 +2,15 @@ use crate::entity_components::entity::Entity;
 use crate::entity_components::moves::Move;
 use crate::entity_components::moves::MoveType;
 use crate::entity_components::stats::Stats;
-use colored::Colorize;
-use ratatui::text;
 use std::collections::VecDeque;
-use std::fmt::format;
-use std::io;
 
 use super::status::Status;
 
 const XP_TO_LEVEL_UP: u32 = 100;
+pub const DEFAULT_PLAYER_LEVEL: u32 = 1;
+pub const DEFAULT_PLAYER_XP: u32 = 0;
+pub const DEFAULT_HAS_GONE_STATE: bool = false;
+pub const DEFAULT_NAME: &str = "Louie";
 
 ///Struct to represent the Player.
 ///Implements the Entity trait
@@ -52,6 +52,25 @@ impl Player {
         }
     }
 
+    pub fn default() -> Self {
+        // start with this mana and hp
+        let stats = Stats::default();
+        let starting_health = stats.calculate_max_health();
+        let starting_mana = stats.calculate_max_mana();
+        Self {
+            name: String::from(DEFAULT_NAME),
+            health: starting_health,
+            max_health: starting_health,
+            mana: starting_mana,
+            max_mana: starting_mana,
+            stats,
+            level: DEFAULT_PLAYER_LEVEL,
+            xp: DEFAULT_PLAYER_XP,
+            has_gone: DEFAULT_HAS_GONE_STATE,
+            statuses: Vec::new(), // start with no statuses
+        }
+    }
+
     /// Makes the Player gain xp and level up if they reach the xp to level up.
     ///
     /// # Returns
@@ -68,19 +87,6 @@ impl Player {
         }
 
         is_leveling_up
-    }
-
-    /// Take input from the user.
-    ///
-    /// # Returns
-    ///
-    /// - A `String` containing the trimmed input from the user.
-    pub fn get_player_input(&self) -> String {
-        let mut user_input = String::new();
-        io::stdin().read_line(&mut user_input).unwrap();
-
-        // return the user input string
-        String::from(user_input.trim())
     }
 
     /// The player levels up and gets to choose stats to increase
@@ -124,74 +130,33 @@ impl Player {
     ///
     /// # Params
     /// - `target` - The target of the attack.
-    /// - `move_list` - The full move list, for finding the moves this `Player` can use.
+    /// - `the_move` - The `Move` for the `Player` object to perform.
     pub fn magic_move(
         &mut self,
         target: &mut dyn Entity,
-        move_list: &Vec<Move<'_>>,
+        the_move: &Move,
         text_vec: &mut VecDeque<String>,
     ) -> bool {
-        if self.has_gone {
-            return false; //error
-        }
-        // get a list of moves that the player meets the requirements for
-        let move_list = Move::get_move_list(move_list, self.level);
-        let move_list_len = move_list.len(); // save the length to avoid borrowing moved value
-
-        // print all of the moves
-        for index in 0..move_list_len {
-            let cur_move = &move_list[index];
-
-            println!(
-                "{}:{} | Cost: {}",
-                (index + 1),
-                cur_move.name().on_blue().black(),
-                cur_move.cost()
-            )
+        // check whether the user has already gone or if the move costs too much
+        if self.has_gone || self.mana < the_move.cost() {
+            return false; // error
         }
 
-        // choose the move
-        let mut choice = -1;
-        while choice < 0
-            || choice >= (move_list_len as i32)
-            || move_list[choice as usize].cost() > self.mana
-        {
-            println!(
-                "{}",
-                "Choose a move (q/quit to go back):".on_white().black()
-            );
-
-            //take user input
-            let user_input = self.get_player_input();
-            if user_input.to_lowercase() == "q" || user_input.to_lowercase() == "quit" {
-                // player wants to stop choosing a magic move
-                return false;
-            }
-
-            //gives back -1 if the input is incorrect
-            choice = user_input.parse::<i32>().unwrap_or(-1) - 1; // minus one to get index
-
-            if choice >= 0
-                && choice < (move_list_len as i32)
-                && move_list[choice as usize].cost() > self.mana
-            {
-                println!("{}", "Move costs too much mana!".black().on_red());
-            }
-        }
-
-        let random_damage =
-            move_list[choice as usize].generate_random_amount(self.magic_strength());
+        let random_damage = the_move.generate_random_amount(self.magic_strength());
 
         let damage_dealt = self.attack_entity(random_damage, target);
         // use the mana from this move
-        self.use_mana(move_list[choice as usize].cost());
+        self.use_mana(the_move.cost());
         // display the damage that was dealt
         self.display_attack_text(target.name(), damage_dealt, text_vec);
 
         // roll for random chance to apply status if it exists
-        if move_list[choice as usize].roll_status_chance() {
-            target.apply_status(&move_list[choice as usize].get_status().unwrap(), text_vec);
+        if the_move.roll_status_chance() {
+            target.apply_status(&the_move.get_status().unwrap(), text_vec);
         }
+
+        // the player has gone
+        self.has_gone = true;
 
         // no error
         true
@@ -221,6 +186,14 @@ impl Player {
     pub fn max_experience(&self) -> u32 {
         XP_TO_LEVEL_UP
     }
+
+    pub fn mana(&self) -> u32 {
+        self.mana
+    }
+
+    pub fn max_mana(&self) -> u32 {
+        self.max_mana
+    }
 }
 
 //entity implementation for player
@@ -243,7 +216,7 @@ impl Entity for Player {
         self.health += amount;
     }
 
-    ///Makes the Plaer use mana
+    /// Makes the Player use mana
     fn use_mana(&mut self, amount: u32) {
         if amount > self.mana {
             self.mana = 0;
@@ -271,24 +244,7 @@ impl Entity for Player {
     ///
     /// # NOTE: This method is now defunct
     fn get_turn_type(&mut self) -> Option<MoveType> {
-        self.has_gone = true;
-
-        let mut choice = -1;
-        while choice <= 0 || choice > (MoveType::NumMoveTypes as i32) {
-            //take user input
-            let user_input = self.get_player_input();
-
-            //gives back -1 if the input is incorrect
-            choice = user_input.parse::<i32>().unwrap_or(-1);
-        }
-
-        //return the correct type
-        match choice {
-            1 => Some(MoveType::AttackMove),
-            2 => Some(MoveType::MagicMove),
-            3 => Some(MoveType::DefendMove),
-            _ => None,
-        }
+        panic!()
     }
 
     fn get_random_attack_dmg(&self) -> u32 {

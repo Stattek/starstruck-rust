@@ -24,5 +24,8 @@
     - Physical attack beats Magic attack
     - Magic attack beats defending
 
+- Defending
+    - Can currently defend without taking up a turn. This needs to be fixed, but it's kinda fun.
+
 ## TUI TODO:
 - Would be awesome to have EarthBound-like backgrounds in the TUI.
