@@ -5,7 +5,12 @@ mod game;
 use std::{error::Error, io};
 
 use crate::game::{CurrentScreen, GameState};
-use entity_components::{enemy::Enemy, entity::Entity, player::Player, stats::Stats};
+use entity_components::{
+    enemy::Enemy,
+    entity::Entity,
+    player::{Player, DEFAULT_HAS_GONE_STATE, DEFAULT_PLAYER_LEVEL, DEFAULT_PLAYER_XP},
+    stats::Stats,
+};
 use ratatui::{
     backend::{Backend, CrosstermBackend},
     crossterm::{
@@ -27,13 +32,7 @@ fn main() -> Result<(), Box<dyn Error>> {
     let mut terminal = Terminal::new(backend).unwrap();
 
     // create app and run it
-    let player = Player::new(
-        "test".to_string(),
-        Stats::new(10, 10, 10, 10, 10, 0),
-        1,
-        0,
-        false,
-    );
+    let player = Player::default();
     let mut the_game = GameState::new(player, None);
     the_game.game_loop(&mut terminal)?;
 

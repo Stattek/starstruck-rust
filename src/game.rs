@@ -9,7 +9,7 @@ use crate::entity_components::{entity::Entity, player::LevelUpType, player::Play
 use colored::Colorize;
 use rand::random;
 use ratatui::style::Styled;
-use ratatui::widgets::{ListState, StatefulWidget};
+use ratatui::widgets::{BorderType, ListState, StatefulWidget};
 use ratatui::{
     backend::{Backend, CrosstermBackend},
     crossterm::{
@@ -24,15 +24,17 @@ use ratatui::{
     Frame, Terminal,
 };
 
-const MAX_ATTACK_STR_LEN: usize = 200;
+const MAX_ATTACK_STR_HISTORY: usize = 200;
+const RESET_MAGIC_CHOICE: bool = false; // if we want to reset the magic choice after a move is chosen
 
 /// This keeps track of the current screen that the app is on.
 #[derive(Clone, Copy)]
 pub enum CurrentScreen {
     Main,       // Main gameplay screen
     LevelingUp, // player is leveling up
-    // Magic,      // choosing a magic move
-    Died, // player died
+    Magic,      // choosing a magic move
+    Warning,    // warning popup text
+    Died,       // player died
     Exiting,
 }
 
@@ -41,12 +43,18 @@ pub struct GameState {
     player: Player,
     enemy: Enemy,
     is_playing: bool,
+    enemy_list: Vec<Enemy>,         // all game enemies
+    status_list: Vec<Status>,       // all game statuses
+    move_list: Vec<Move>,           // all game moves
+    move_list_available_len: usize, // the length of available moves to the player
 
     // TUI
     current_screen: CurrentScreen,
-    cur_attack_text_idx: usize,
+    cur_attack_text_idx: usize, // for scrolling through the attack text
+    cur_move_list_idx: usize,
     attack_text: VecDeque<String>, // NOTE: always push_front() to this.
     last_screen: CurrentScreen,    // Last screen to return to from the current (in case we need to)
+    warning_text: String,
 }
 
 impl GameState {
@@ -63,27 +71,32 @@ impl GameState {
             the_enemy = create_temp_monster();
         }
 
+        let status_list = Status::create_status_list();
+        let move_list = Move::create_move_list(&status_list);
+        let move_list_available_len = Move::get_move_list(&move_list, player.level());
+
         GameState {
             player,
             enemy: the_enemy,
             is_playing,
+            enemy_list: Enemy::create_enemy_list(),
+            status_list,
+            move_list,
+            move_list_available_len,
             current_screen: CurrentScreen::Main,
             cur_attack_text_idx: 0, // start at the first index
+            cur_move_list_idx: 0,   // start at first index
             attack_text: VecDeque::<String>::new(),
             last_screen: CurrentScreen::Main,
+            warning_text: String::new(),
         }
     }
 
     ///the main game loop
     pub fn game_loop<B: Backend>(&mut self, terminal: &mut Terminal<B>) -> io::Result<()> {
-        //create lists for creating enemies and statuses
-        let enemy_list = Enemy::create_enemy_list();
-        let status_list = Status::create_status_list();
-        let move_list = Move::create_move_list(&status_list);
-
         //create a new random monster
         // TODO: this will cause issues if you want to start off with a specific enemy
-        self.enemy = self.create_random_enemy(&enemy_list);
+        self.enemy = self.create_random_enemy();
 
         loop {
             // each loop is a tick, with the player or enemy able to try attacking.
@@ -101,18 +114,17 @@ impl GameState {
                     CurrentScreen::Main => match key.code {
                         // stop playing
                         KeyCode::Char('q') => {
-                            self.last_screen = self.current_screen;
-                            self.current_screen = CurrentScreen::Exiting;
+                            self.change_screen(CurrentScreen::Exiting);
                         }
                         // TODO: for attacking moves, give back some value to let the game know when to change screens (like when a player levels up)
                         KeyCode::Char('1') => {
-                            self.do_player_turn(&move_list, MoveType::AttackMove);
+                            self.do_player_turn(MoveType::AttackMove);
                         }
                         KeyCode::Char('2') => {
-                            self.do_player_turn(&move_list, MoveType::MagicMove);
+                            self.change_screen(CurrentScreen::Magic);
                         }
                         KeyCode::Char('3') => {
-                            self.do_player_turn(&move_list, MoveType::DefendMove);
+                            self.do_player_turn(MoveType::DefendMove);
                         }
                         // nothing
                         _ => {}
@@ -122,8 +134,7 @@ impl GameState {
                     CurrentScreen::LevelingUp => {
                         match key.code {
                             KeyCode::Char('q') => {
-                                self.last_screen = self.current_screen; // so we can return back to this screen
-                                self.current_screen = CurrentScreen::Exiting;
+                                self.change_screen(CurrentScreen::Exiting);
                             }
                             KeyCode::Char('1') => {
                                 self.player.level_up(LevelUpType::Strength);
@@ -138,14 +149,30 @@ impl GameState {
                             _ => {}
                         }
 
+                        // since we leveled up, we can now check what moves that are available.
+                        self.move_list_available_len =
+                            Move::get_move_list(&self.move_list, self.player.level());
                         // after we have chosen one of these, we now go back to the normal game
                         self.current_screen = CurrentScreen::Main;
                     }
 
                     CurrentScreen::Died => match key.code {
                         KeyCode::Char('q') => {
-                            self.last_screen = self.current_screen;
-                            self.current_screen = CurrentScreen::Exiting;
+                            self.change_screen(CurrentScreen::Exiting);
+                        }
+                        // nothing
+                        _ => {}
+                    },
+
+                    CurrentScreen::Warning => match key.code {
+                        KeyCode::Char('q') => {
+                            self.change_screen_no_save(self.last_screen);
+                        }
+                        KeyCode::Esc => {
+                            self.change_screen_no_save(self.last_screen);
+                        }
+                        KeyCode::Enter => {
+                            self.change_screen_no_save(self.last_screen);
                         }
                         // nothing
                         _ => {}
@@ -162,26 +189,95 @@ impl GameState {
                         _ => {}
                     },
 
-                    _ => {}
+                    CurrentScreen::Magic => match key.code {
+                        KeyCode::Char('q') => {
+                            self.change_screen(CurrentScreen::Main);
+                        }
+                        KeyCode::Esc => {
+                            self.change_screen(CurrentScreen::Main);
+                        }
+                        // move up and down through the move list
+                        KeyCode::Up => {
+                            if self.cur_move_list_idx > 0 {
+                                self.cur_move_list_idx -= 1;
+                            }
+                        }
+                        KeyCode::Down => {
+                            if self.cur_move_list_idx < self.move_list_available_len - 1 {
+                                self.cur_move_list_idx += 1;
+                            }
+                        }
+                        KeyCode::Enter => {
+                            if self.do_player_turn(MoveType::MagicMove) {
+                                self.change_screen(self.last_screen);
+                            } else {
+                                // display a warning if we can't do this move
+                                self.display_warning(
+                                    "Could not perform magic move! Have enough mana?",
+                                );
+                            }
+                        }
+                        _ => {}
+                    },
                 }
             }
 
-            // FIXME: this should be removed and bring logic into this function
-            self.do_enemy_turn();
+            // only let the other events occur when the player is still playing
+            if self.is_playing {
+                self.perform_entity_check();
+                self.do_enemy_turn();
 
-            // do cleanup if both the player and enemy have gone
-            self.perform_entity_check(&enemy_list);
-            self.truncate_attack_text();
+                // do cleanup if both the player and enemy have gone
+                self.perform_entity_check();
+                self.truncate_attack_text();
+            }
         }
 
         Ok(())
     }
 
-    fn perform_entity_check(&mut self, enemy_list: &Vec<Enemy>) {
-        // do cleanup if both have gone this turn
-        if self.player.has_gone() && self.enemy.has_gone() {
+    /// Changes the current screen and saves the
+    /// state of the last screen.
+    ///
+    /// # Params
+    /// - `new_screen` - The new screen to switch to.
+    fn change_screen(&mut self, new_screen: CurrentScreen) {
+        self.last_screen = self.current_screen;
+        self.current_screen = new_screen;
+    }
+
+    /// Changes the current screen and without saving the
+    /// state of the last screen. Typically used with warnings
+    /// to avoid saving the warning as the last screen state.
+    ///
+    /// # Params
+    /// - `new_screen` - The new screen to switch to.
+    fn change_screen_no_save(&mut self, new_screen: CurrentScreen) {
+        self.current_screen = new_screen;
+    }
+
+    /// Changes the current screen to display a warning and saves the
+    /// the last screen.
+    ///
+    /// # Params
+    /// - `warning_text` - The warning text to display.
+    ///
+    /// # Example
+    /// ```rust,norun
+    /// // something happens, causing an error
+    /// self.display_warning("Could not perform magic attack.");
+    /// ```
+    fn display_warning(&mut self, warning_text: &str) {
+        self.warning_text = String::from(warning_text);
+        self.change_screen(CurrentScreen::Warning);
+    }
+
+    /// Checks the state of entities and ends the turn if an entity has died or
+    /// all entities have gone.
+    fn perform_entity_check(&mut self) {
+        // end the turn if both entities have gone or if either one of the entities has died
+        if (self.player.has_gone() && self.enemy.has_gone()) || self.check_entities() {
             self.end_turn();
-            self.check_entities(enemy_list);
         }
     }
 
@@ -189,7 +285,7 @@ impl GameState {
     /// memory if the history gets too long.
     fn truncate_attack_text(&mut self) {
         let mut cur_len = self.attack_text.len();
-        while cur_len > MAX_ATTACK_STR_LEN {
+        while cur_len > MAX_ATTACK_STR_HISTORY {
             self.attack_text.pop_front();
             cur_len = self.attack_text.len();
         }
@@ -208,38 +304,49 @@ impl GameState {
         self.enemy.allow_move();
     }
 
-    fn do_player_turn(&mut self, move_list: &Vec<Move>, turn_type: MoveType) {
-        // if the  is faster and hasn't gone yet
+    /// Does the player's turn based on the player's choice of move.
+    ///
+    /// # Params
+    /// - `turn_type` - The type of turn the player is making.
+    fn do_player_turn(&mut self, turn_type: MoveType) -> bool {
+        let mut ret = false; // move not done
+
+        // if the player is faster and hasn't gone yet
         if (self.player.speed() >= self.enemy.speed() && !self.player.has_gone())
             || (self.enemy.has_gone() && !self.player.has_gone())
         {
             // do the action that the player wishes.
             // It is possible that these actions fail, due to the Player already having gone.
             // In this case, nothing occurs.
-            match turn_type {
-                MoveType::AttackMove => {
-                    self.player
-                        .attack_move(&mut self.enemy, &mut self.attack_text);
-                }
+            ret = match turn_type {
+                MoveType::AttackMove => self
+                    .player
+                    .attack_move(&mut self.enemy, &mut self.attack_text),
 
                 MoveType::MagicMove => {
-                    self.player
-                        .magic_move(&mut self.enemy, move_list, &mut self.attack_text);
+                    let temp = self.player.magic_move(
+                        &mut self.enemy,
+                        &self.move_list[self.cur_move_list_idx],
+                        &mut self.attack_text,
+                    );
+
+                    if RESET_MAGIC_CHOICE {
+                        // reset the move list index
+                        self.cur_move_list_idx = 0;
+                    }
+
+                    temp
                 }
 
-                MoveType::DefendMove => {
-                    self.player.defend_move(&mut self.attack_text);
-                }
-
-                _ => {
-                    // we should never reach this unless something has gone wrong
-                    panic!("Invalid move type");
-                }
-            }
+                MoveType::DefendMove => self.player.defend_move(&mut self.attack_text),
+            };
         }
+
+        ret
     }
 
-    // TODO: move code for this into the Enemy struct to avoid spaghetti code
+    /// Does the enemy's turn, allowing the enemy to choose
+    /// what to do in this turn.
     fn do_enemy_turn(&mut self) {
         // if the enemy is faster and hasn't gone yet
         if (self.enemy.speed() > self.player.speed() && !self.enemy.has_gone())
@@ -269,8 +376,13 @@ impl GameState {
     ///
     ///If the player dies, the game is over.
     /// # Returns
-    /// True if an entity died, false otherwise.
-    fn check_entities(&mut self, enemy_list: &Vec<Enemy>) -> bool {
+    /// `true` if an entity died, false otherwise.
+    ///
+    /// # Notes
+    /// - This function can change the value of the current screen,
+    /// so ensure that care is taken that it does not override the current screen
+    /// repeatedly in unwanted situations.
+    fn check_entities(&mut self) -> bool {
         let mut output = false;
 
         if self.player.is_dead() {
@@ -290,7 +402,7 @@ impl GameState {
             }
 
             // create the enemy after the xp is dropped
-            self.enemy = self.create_random_enemy(&enemy_list);
+            self.enemy = self.create_random_enemy();
 
             //entity died
             output = true;
@@ -300,8 +412,8 @@ impl GameState {
     }
 
     ///Creates a new random monster
-    fn create_random_enemy(&self, enemy_list: &Vec<Enemy>) -> Enemy {
-        let possible_enemies = self.get_possible_enemies(enemy_list);
+    fn create_random_enemy(&self) -> Enemy {
+        let possible_enemies = self.get_possible_enemies();
         // pick a random enemy from the list
         let random_index = random::<usize>() % possible_enemies.len();
 
@@ -312,14 +424,14 @@ impl GameState {
     ///
     /// # Returns
     /// - A list of enemies that the player can fight, based on level.
-    fn get_possible_enemies(&self, enemy_list: &Vec<Enemy>) -> Vec<Enemy> {
+    fn get_possible_enemies(&self) -> Vec<Enemy> {
         let mut result = Vec::new();
 
         // iterate through all enemies
-        for i in 0..enemy_list.len() {
+        for i in 0..self.enemy_list.len() {
             // we can fight an enemy if it is below or close to the player's level
-            if enemy_list[i].level() <= self.player.level() + 2 {
-                result.push(enemy_list[i].clone());
+            if self.enemy_list[i].level() <= self.player.level() + 2 {
+                result.push(self.enemy_list[i].clone());
             }
         }
 
@@ -343,8 +455,8 @@ impl GameState {
             .direction(Direction::Vertical)
             .constraints([
                 Constraint::Length(7), // top segment is 7 lines tall
-                Constraint::Min(4), // the second section should never be smaller than one line tall but can expand if needed
-                Constraint::Min(4), // third section
+                Constraint::Length(7), // the second section should never be smaller than one line tall but can expand if needed
+                Constraint::Min(4),    // third section
                 Constraint::Length(3), // bottom section is 3 lines tall
             ])
             .split(frame.area());
@@ -394,6 +506,14 @@ impl GameState {
                 Style::default().fg(Color::Green),
             )),
             ListItem::new(Line::styled(
+                format!(
+                    "    Mana: {}/{}",
+                    self.player.mana(),
+                    self.player.max_mana()
+                ),
+                Style::default().fg(Color::Blue),
+            )),
+            ListItem::new(Line::styled(
                 format!("    Level: {}", self.player.level(),),
                 Style::default().fg(Color::Blue),
             )),
@@ -436,7 +556,7 @@ impl GameState {
         let game_text_block = Block::default().style(Style::default().bg(Color::Black));
         let mut list_items = Vec::<ListItem>::new();
 
-        // loop through the key-value pairs and add them to the list
+        // create a new list from the attack list
         for element in &self.attack_text {
             list_items.push(ListItem::new(Line::from(Span::styled(
                 element,
@@ -458,6 +578,12 @@ impl GameState {
                 CurrentScreen::Main => Span::styled("Playing", Style::default().fg(Color::Green)),
                 CurrentScreen::LevelingUp => {
                     Span::styled("Leveling up", Style::default().fg(Color::Blue))
+                }
+                CurrentScreen::Magic => {
+                    Span::styled("Choosing a magic move", Style::default().fg(Color::Blue))
+                }
+                CurrentScreen::Warning => {
+                    Span::styled("Warning", Style::default().fg(Color::Yellow))
                 }
                 CurrentScreen::Died => Span::styled("Died", Style::default().fg(Color::Red)),
                 CurrentScreen::Exiting => {
@@ -484,6 +610,14 @@ impl GameState {
                     "(1) Strength, (2) Magic, (3) Health",
                     Style::default().fg(Color::Blue),
                 ),
+                CurrentScreen::Magic => Span::styled(
+                    "(↑↓) Change choice, (enter) Select choice",
+                    Style::default().fg(Color::Blue),
+                ),
+                CurrentScreen::Warning => Span::styled(
+                    "(enter, q) Close Warning",
+                    Style::default().fg(Color::Yellow),
+                ),
                 CurrentScreen::Died => Span::styled("(q) to quit", Style::default().fg(Color::Red)),
                 CurrentScreen::Exiting => {
                     Span::styled("(q) to quit", Style::default().fg(Color::Red))
@@ -506,65 +640,130 @@ impl GameState {
         frame.render_widget(mode_footer, footer_chunks[0]);
         frame.render_widget(key_notes_footer, footer_chunks[1]);
 
-        if let CurrentScreen::LevelingUp = self.current_screen {
-            // create a block with a title and no borders
-            let popup_block = Block::default()
-                .title("Level up!")
-                .borders(Borders::NONE)
-                .style(Style::default().bg(Color::DarkGray));
+        // popups
+        match self.current_screen {
+            CurrentScreen::LevelingUp => {
+                // create a block with a title and no borders
+                let popup_block = Block::default()
+                    .title("Level up!")
+                    .borders(Borders::NONE)
+                    .style(Style::default().bg(Color::DarkGray));
 
-            // create a centered rectangle
-            let area = self.centered_rect(60, 25, frame.area());
-            frame.render_widget(Clear, area);
-            frame.render_widget(popup_block, area);
+                // create a centered rectangle
+                let area = self.centered_rect(60, 25, frame.area());
+                frame.render_widget(Clear, area);
+                frame.render_widget(popup_block, area);
 
-            // show the player waht they have already entered
-            let level_up_block = Block::default().title("Level Up!").borders(Borders::ALL);
+                // show the player waht they have already entered
+                let level_up_block = Block::default().title("Level Up!").borders(Borders::ALL);
 
-            let level_up_text = Paragraph::new("Choose a trait to level up!").block(level_up_block);
+                let level_up_text =
+                    Paragraph::new("Choose a trait to level up!").block(level_up_block);
 
-            frame.render_widget(level_up_text, area);
-        }
+                frame.render_widget(level_up_text, area);
+            }
 
-        // popup if the player died
-        if let CurrentScreen::Died = self.current_screen {
-            // create a block with a title and no borders
-            let popup_block = Block::default()
-                .title("You died!")
-                .borders(Borders::NONE)
-                .style(Style::default().bg(Color::DarkGray));
+            CurrentScreen::Warning => {
+                // create a block with a title and no borders
+                let popup_block = Block::default()
+                    .title("Warning!")
+                    .borders(Borders::NONE)
+                    .style(Style::default().bg(Color::Yellow));
 
-            // create a centered rectangle
-            let area = self.centered_rect(60, 25, frame.area());
-            frame.render_widget(popup_block, area);
+                // create a centered rectangle
+                let area = self.centered_rect(60, 25, frame.area());
+                frame.render_widget(Clear, area);
+                frame.render_widget(popup_block, area);
 
-            // show the player waht they have already entered
-            let died_block = Block::default().title("You died!").borders(Borders::ALL);
+                // show the player waht they have already entered
+                let died_block = Block::default().title("Warning!").borders(Borders::ALL);
 
-            let died_text = Paragraph::new("(q) to quit").block(died_block);
+                let died_text = Paragraph::new(self.warning_text.clone()).block(died_block);
 
-            frame.render_widget(died_text, area);
-        }
+                frame.render_widget(died_text, area);
+            }
 
-        // let the user choose to output the key-value pairs or close without printing anything
-        if let CurrentScreen::Exiting = self.current_screen {
-            frame.render_widget(Clear, frame.area()); //this clears the entire screen and anything already drawn
-            let popup_block = Block::default()
-                .title("Y/N")
-                .borders(Borders::NONE)
-                .style(Style::default().bg(Color::DarkGray));
+            CurrentScreen::Died => {
+                // create a block with a title and no borders
+                let popup_block = Block::default()
+                    .title("You died!")
+                    .borders(Borders::NONE)
+                    .style(Style::default().bg(Color::DarkGray));
 
-            let exit_text = Text::styled(
-                "Are you sure you want to quit? (y/n)",
-                Style::default().fg(Color::Red),
-            );
-            // the `trim: false` will stop the text from being cut off when over the edge of the block
-            let exit_paragraph = Paragraph::new(exit_text)
-                .block(popup_block)
-                .wrap(Wrap { trim: false });
+                // create a centered rectangle
+                let area = self.centered_rect(60, 25, frame.area());
+                frame.render_widget(Clear, area);
+                frame.render_widget(popup_block, area);
 
-            let area = self.centered_rect(60, 25, frame.area());
-            frame.render_widget(exit_paragraph, area);
+                // show the player waht they have already entered
+                let died_block = Block::default().title("You died!").borders(Borders::ALL);
+
+                let died_text = Paragraph::new("(q) to quit").block(died_block);
+
+                frame.render_widget(died_text, area);
+            }
+
+            CurrentScreen::Exiting => {
+                frame.render_widget(Clear, frame.area()); //this clears the entire screen and anything already drawn
+                let popup_block = Block::default()
+                    .title("Y/N")
+                    .borders(Borders::NONE)
+                    .style(Style::default().bg(Color::DarkGray));
+
+                let exit_text = Text::styled(
+                    "Are you sure you want to quit? (y/n)",
+                    Style::default().fg(Color::Red),
+                );
+                // the `trim: false` will stop the text from being cut off when over the edge of the block
+                let exit_paragraph = Paragraph::new(exit_text)
+                    .block(popup_block)
+                    .wrap(Wrap { trim: false });
+
+                let area = self.centered_rect(60, 25, frame.area());
+                frame.render_widget(exit_paragraph, area);
+            }
+
+            CurrentScreen::Magic => {
+                let popup_block = Block::default()
+                    .title("Choosing Move")
+                    .borders(Borders::ALL)
+                    .border_style(Style::default().fg(Color::Blue))
+                    .border_type(BorderType::Rounded);
+
+                let mut ui_move_list_items = Vec::<ListItem>::new();
+
+                // add the elements of move_list to the ui list (should be a small list)
+                for i in 0..self.move_list_available_len {
+                    if i == self.cur_move_list_idx {
+                        ui_move_list_items.push(ListItem::new(Line::from(Span::styled(
+                            format!(
+                                "Name: {}, Cost: {}",
+                                self.move_list[i].name(),
+                                self.move_list[i].cost()
+                            ),
+                            Style::default().bg(Color::Blue).fg(Color::White),
+                        ))));
+                    } else {
+                        ui_move_list_items.push(ListItem::new(Line::from(Span::styled(
+                            format!(
+                                "Name: {}, Cost: {}",
+                                self.move_list[i].name(),
+                                self.move_list[i].cost()
+                            ),
+                            Style::default().fg(Color::Blue),
+                        ))));
+                    };
+                }
+
+                let mut move_list_state =
+                    ListState::default().with_selected(Some(self.cur_move_list_idx));
+                let ui_move_list = List::new(ui_move_list_items).block(popup_block);
+
+                let area = self.centered_rect(60, 60, frame.area());
+                frame.render_stateful_widget(ui_move_list, area, &mut move_list_state);
+            }
+
+            _ => {}
         }
     }
 
