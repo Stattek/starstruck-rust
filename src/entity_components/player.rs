@@ -2,12 +2,15 @@ use crate::entity_components::entity::Entity;
 use crate::entity_components::moves::Move;
 use crate::entity_components::moves::MoveType;
 use crate::entity_components::stats::Stats;
-use colored::Colorize;
-use std::io;
+use std::collections::VecDeque;
 
 use super::status::Status;
 
 const XP_TO_LEVEL_UP: u32 = 100;
+pub const DEFAULT_PLAYER_LEVEL: u32 = 1;
+pub const DEFAULT_PLAYER_XP: u32 = 0;
+pub const DEFAULT_HAS_GONE_STATE: bool = false;
+pub const DEFAULT_NAME: &str = "Louie";
 
 ///Struct to represent the Player.
 ///Implements the Entity trait
@@ -22,6 +25,12 @@ pub struct Player {
     xp: u32,
     has_gone: bool,
     statuses: Vec<Status>,
+}
+
+pub enum LevelUpType {
+    Strength,
+    Magic,
+    Health,
 }
 
 impl Player {
@@ -43,65 +52,52 @@ impl Player {
         }
     }
 
-    ///Makes the Player gain xp and level up if they reach 100 xp
-    pub fn gain_xp(&mut self, amount: u32) {
+    pub fn default() -> Self {
+        // start with this mana and hp
+        let stats = Stats::default();
+        let starting_health = stats.calculate_max_health();
+        let starting_mana = stats.calculate_max_mana();
+        Self {
+            name: String::from(DEFAULT_NAME),
+            health: starting_health,
+            max_health: starting_health,
+            mana: starting_mana,
+            max_mana: starting_mana,
+            stats,
+            level: DEFAULT_PLAYER_LEVEL,
+            xp: DEFAULT_PLAYER_XP,
+            has_gone: DEFAULT_HAS_GONE_STATE,
+            statuses: Vec::new(), // start with no statuses
+        }
+    }
+
+    /// Makes the Player gain xp and level up if they reach the xp to level up.
+    ///
+    /// # Returns
+    /// - `true` if the `Player` is ready to level up, `false` otherwise
+    pub fn gain_xp(&mut self, amount: u32) -> bool {
+        let mut is_leveling_up = false;
+
         self.xp += amount;
 
         // for level-up chains
         while self.xp >= XP_TO_LEVEL_UP {
             self.xp -= XP_TO_LEVEL_UP;
-            self.level_up();
+            is_leveling_up = true;
         }
-    }
 
-    /// Take input from the user.
-    ///
-    /// # Returns
-    ///
-    /// - A `String` containing the trimmed input from the user.
-    pub fn get_player_input(&self) -> String {
-        let mut user_input = String::new();
-        io::stdin().read_line(&mut user_input).unwrap();
-
-        // return the user input string
-        String::from(user_input.trim())
+        is_leveling_up
     }
 
     /// The player levels up and gets to choose stats to increase
-    fn level_up(&mut self) {
+    pub fn level_up(&mut self, level_type: LevelUpType) {
         // increment level
         self.level += 1;
-        println!(
-            "Choose a stat to increase:\n1. {}\n2. {}\n3. {}",
-            "Strength".yellow(),
-            "Magic".blue(),
-            "Health".red()
-        );
 
-        let mut user_input = self.get_player_input();
-
-        let mut choice = user_input.parse::<i32>().unwrap_or(-1);
-
-        while choice <= 0 || choice > 3 {
-            println!(
-                "Choose a stat to increase:\n1. {}\n2. {}\n3. {}",
-                "Strength".yellow(),
-                "Magic".blue(),
-                "Health".red()
-            );
-
-            //take user input
-            user_input = self.get_player_input();
-
-            //gives back -1 if the input is incorrect
-            choice = user_input.parse::<i32>().unwrap_or(-1);
-        }
-
-        match choice {
-            1 => self.stats.increase_physical(),
-            2 => self.stats.increase_magic(),
-            3 => self.stats.increase_health(),
-            _ => panic!("Invalid choice"), // just panic if we get an invalid answer
+        match level_type {
+            LevelUpType::Strength => self.stats.increase_physical(),
+            LevelUpType::Magic => self.stats.increase_magic(),
+            LevelUpType::Health => self.stats.increase_health(),
         }
         self.reset_stats();
     }
@@ -117,86 +113,59 @@ impl Player {
     }
 
     /// Displays attack text for the `Player` attacking another `Entity`.
-    fn display_attack_text(&self, victim_entity_name: String, damage_dealt: u32) {
-        let mut output_str = String::new();
-        output_str.push_str("You did ");
-        output_str.push_str(damage_dealt.to_string().as_str());
-        output_str.push_str(" damage to ");
-        output_str.push_str(victim_entity_name.as_str());
-
-        println!("{}", output_str.red());
+    fn display_attack_text(
+        &self,
+        victim_entity_name: String,
+        damage_dealt: u32,
+        text_vec: &mut VecDeque<String>,
+    ) {
+        text_vec.push_back(format!(
+            "You did {} damage to {}",
+            damage_dealt.to_string(),
+            victim_entity_name
+        ));
     }
 
     /// The `Player` performs a magic move against another `Entity`.
     ///
     /// # Params
     /// - `target` - The target of the attack.
-    /// - `move_list` - The full move list, for finding the moves this `Player` can use.
-    pub fn magic_move(&mut self, target: &mut dyn Entity, move_list: &Vec<Move<'_>>) -> bool {
-        // get a list of moves that the player meets the requirements for
-        let move_list = Move::get_move_list(move_list, self.level);
-        let move_list_len = move_list.len(); // save the length to avoid borrowing moved value
-
-        // print all of the moves
-        for index in 0..move_list_len {
-            let cur_move = &move_list[index];
-
-            println!(
-                "{}:{} | Cost: {}",
-                (index + 1),
-                cur_move.name().on_blue().black(),
-                cur_move.cost()
-            )
+    /// - `the_move` - The `Move` for the `Player` object to perform.
+    pub fn magic_move(
+        &mut self,
+        target: &mut dyn Entity,
+        the_move: &Move,
+        text_vec: &mut VecDeque<String>,
+    ) -> bool {
+        // check whether the user has already gone or if the move costs too much
+        if self.has_gone || self.mana < the_move.cost() {
+            return false; // error
         }
 
-        // choose the move
-        let mut choice = -1;
-        while choice < 0
-            || choice >= (move_list_len as i32)
-            || move_list[choice as usize].cost() > self.mana
-        {
-            println!(
-                "{}",
-                "Choose a move (q/quit to go back):".on_white().black()
-            );
-
-            //take user input
-            let user_input = self.get_player_input();
-            if user_input.to_lowercase() == "q" || user_input.to_lowercase() == "quit" {
-                // player wants to stop choosing a magic move
-                return false;
-            }
-
-            //gives back -1 if the input is incorrect
-            choice = user_input.parse::<i32>().unwrap_or(-1) - 1; // minus one to get index
-
-            if choice >= 0
-                && choice < (move_list_len as i32)
-                && move_list[choice as usize].cost() > self.mana
-            {
-                println!("{}", "Move costs too much mana!".black().on_red());
-            }
-        }
-
-        let random_damage =
-            move_list[choice as usize].generate_random_amount(self.magic_strength());
+        let random_damage = the_move.generate_random_amount(self.magic_strength());
 
         let damage_dealt = self.attack_entity(random_damage, target);
         // use the mana from this move
-        self.use_mana(move_list[choice as usize].cost());
+        self.use_mana(the_move.cost());
         // display the damage that was dealt
-        self.display_attack_text(target.name(), damage_dealt);
+        self.display_attack_text(target.name(), damage_dealt, text_vec);
 
         // roll for random chance to apply status if it exists
-        if move_list[choice as usize].roll_status_chance() {
-            target.apply_status(&move_list[choice as usize].get_status().unwrap());
+        if the_move.roll_status_chance() {
+            target.apply_status(&the_move.get_status().unwrap(), text_vec);
         }
+
+        // the player has gone
+        self.has_gone = true;
 
         // no error
         true
     }
 
-    pub fn defend_move(&mut self) -> bool {
+    pub fn defend_move(&mut self, text_vec: &mut VecDeque<String>) -> bool {
+        if self.has_gone {
+            return false;
+        }
         self.start_defending();
 
         // tell player that they started defending
@@ -204,10 +173,26 @@ impl Player {
         output_str.push_str(self.name.as_str());
         output_str.push_str(" began defending for 1 turn.");
 
-        println!("{}", output_str.green());
+        text_vec.push_back(format!("{} began defending for 1 turn.", self.name));
 
         // no error
         true
+    }
+
+    pub fn experience(&self) -> u32 {
+        self.xp
+    }
+
+    pub fn max_experience(&self) -> u32 {
+        XP_TO_LEVEL_UP
+    }
+
+    pub fn mana(&self) -> u32 {
+        self.mana
+    }
+
+    pub fn max_mana(&self) -> u32 {
+        self.max_mana
     }
 }
 
@@ -231,7 +216,7 @@ impl Entity for Player {
         self.health += amount;
     }
 
-    ///Makes the Plaer use mana
+    /// Makes the Player use mana
     fn use_mana(&mut self, amount: u32) {
         if amount > self.mana {
             self.mana = 0;
@@ -257,56 +242,13 @@ impl Entity for Player {
 
     ///Player chooses attack type, and it is returned.
     ///
-    /// # FUTURE: Move this to GameState
+    /// # NOTE: This method is now defunct
     fn get_turn_type(&mut self) -> Option<MoveType> {
-        self.has_gone = true;
-
-        let mut choice = -1;
-        while choice <= 0 || choice > (MoveType::NumMoveTypes as i32) {
-            println!(
-                "What do you want to do?\n\t1. {}\n\t2. {}\n\t3. {}",
-                "Attack".red(),
-                "Magic".blue(),
-                "Defend".white()
-            );
-
-            //take user input
-            let user_input = self.get_player_input();
-
-            //gives back -1 if the input is incorrect
-            choice = user_input.parse::<i32>().unwrap_or(-1);
-        }
-
-        //return the correct type
-        match choice {
-            1 => Some(MoveType::AttackMove),
-            2 => Some(MoveType::MagicMove),
-            3 => Some(MoveType::DefendMove),
-            _ => None,
-        }
+        panic!()
     }
 
     fn get_random_attack_dmg(&self) -> u32 {
         self.stats.generate_random_attack_dmg()
-    }
-
-    ///Print the Player info
-    fn print_info(&self) {
-        println!(
-            "{}:\n\t{}{}\n\t{}{} / {}\n\t{}{} / {}\n\t{} {} / {}",
-            self.name,
-            "Level: ".blue(),
-            self.level.to_string().on_blue(),
-            "Health: ".green(),
-            self.health,
-            self.max_health,
-            "Mana: ".blue(),
-            self.mana,
-            self.max_mana,
-            "Experience".blue(),
-            self.xp,
-            XP_TO_LEVEL_UP
-        );
     }
 
     /// Get the name of the Player
@@ -332,7 +274,7 @@ impl Entity for Player {
     }
 
     /// Ticks statuses and goes through the list
-    fn tick_statuses(&mut self) {
+    fn tick_statuses(&mut self, text_vec: &mut VecDeque<String>) {
         let mut indicies_to_remove: Vec<usize> = Vec::new();
 
         for i in 0..self.statuses.len() {
@@ -346,24 +288,20 @@ impl Entity for Player {
 
             // print what the status effect did and apply effect
             if self.statuses[i].is_healing() {
-                println!(
-                    "{} {} {} {} {}",
-                    self.name.green(),
-                    "healed".green(),
-                    amount.to_string().as_str().on_green(),
-                    "health from".green(),
-                    self.statuses[i].name().on_blue().black()
-                );
+                text_vec.push_back(format!(
+                    "{} healed {} health from {}",
+                    self.name,
+                    amount,
+                    self.statuses[i].name()
+                ));
                 self.heal(amount);
             } else {
-                println!(
-                    "{} {} {} {} {}",
-                    self.name.green(),
-                    "took".red(),
-                    amount.to_string().as_str().on_red(),
-                    "damage from".red(),
-                    self.statuses[i].name().on_blue().black()
-                );
+                text_vec.push_back(format!(
+                    "{} took {} damage from {}",
+                    self.name,
+                    amount,
+                    self.statuses[i].name()
+                ));
                 self.take_damage(amount);
             }
         }
@@ -379,20 +317,43 @@ impl Entity for Player {
         }
     }
 
-    fn apply_status(&mut self, status: &Status) {
-        println!("{} appled to {}", status.name(), self.name);
+    fn apply_status(&mut self, status: &Status, text_vec: &mut VecDeque<String>) {
+        text_vec.push_back(format!("{} applied to {}", status.name(), self.name));
         self.statuses.push(status.clone());
     }
 
-    fn attack_move(&self, target: &mut dyn Entity) -> bool {
+    fn attack_move(&mut self, target: &mut dyn Entity, text_vec: &mut VecDeque<String>) -> bool {
+        if self.has_gone {
+            return false; // error, did not go
+        }
         // attack the enemy with a random amount of damage
         let random_damage = self.get_random_attack_dmg();
 
         let damage_dealt = self.attack_entity(random_damage, target);
         // display the damage dealt
-        self.display_attack_text(target.name(), damage_dealt);
+        self.display_attack_text(target.name(), damage_dealt, text_vec);
+
+        // the player has gone
+        self.has_gone = true;
 
         // no error
         true
+    }
+
+    fn has_gone(&self) -> bool {
+        self.has_gone
+    }
+
+    fn health(&self) -> u32 {
+        self.health
+    }
+
+    fn max_health(&self) -> u32 {
+        self.max_health
+    }
+
+    fn allow_move(&mut self) {
+        // we can move again
+        self.has_gone = false;
     }
 }
