@@ -35,6 +35,19 @@ impl Stats {
         }
     }
 
+    /// Create a default Stats object
+    pub fn default() -> Self {
+        Self {
+            health: 10,
+            mana: 10,
+            speed: 10,
+            strength: 10,
+            magic_strength: 10,
+            defense: 0,
+            is_defending: false,
+        }
+    }
+
     ///Generates the health of the entity
     pub fn calculate_max_health(&self) -> u32 {
         //TODO: change this with
@@ -51,7 +64,7 @@ impl Stats {
     pub fn generate_random_attack_dmg(&self) -> u32 {
         // TODO: random crits?
 
-        // strength + (random number between 0 and strength/2)
+        // strength + (random number between 0 and strength / 2)
         self.strength + (random::<u32>() % (self.strength / 2))
     }
 

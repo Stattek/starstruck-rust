@@ -1,5 +1,7 @@
+use std::collections::VecDeque;
+
 use crate::entity_components::{entity::Entity, moves::MoveType, stats::Stats};
-use colored::Colorize;
+use ratatui::text;
 
 use super::status::Status;
 
@@ -21,7 +23,13 @@ pub struct Enemy {
 const BASE_XP: u32 = 20; // the base xp dropped by an enemy
 
 impl Enemy {
-    ///create new enemy
+    /// Create a new `Enemy`
+    ///
+    /// # Params
+    /// - `name` - The name of the `Enemy`.
+    /// - `stats` - The `Stats` of the `Enemy`.
+    /// - `level` - The level of the `Enemy`
+    /// - `has_gone` - If this `Enemy` has gone this turn.
     pub fn new(name: String, stats: Stats, level: u32, has_gone: bool) -> Self {
         let starting_health = stats.calculate_max_health();
         let starting_mana = stats.calculate_max_mana();
@@ -38,7 +46,14 @@ impl Enemy {
         }
     }
 
-    pub fn drop_xp(&self, player_level: u32) -> u32 {
+    /// Calculate the xp dropped by this `Enemy`.
+    ///
+    /// # Params
+    /// - `player_level` - The level of the player.
+    ///
+    /// # Returns
+    /// - The xp dropped by this `Enemy`.
+    pub fn drop_xp(&self, player_level: u32, text_vec: &mut VecDeque<String>) -> u32 {
         let mut amount = BASE_XP; // start with a base xp
 
         let num_levels_above_player = self.level as i64 - player_level as i64;
@@ -46,20 +61,28 @@ impl Enemy {
             amount *= 2; // just crazy xp as enemies get way higher leveled than you
         }
 
-        println!("{} dropped {} xp!", self.name, amount.to_string().blue());
+        text_vec.push_back(format!("{} dropped {} xp!", self.name, amount));
 
         amount
     }
 
-    fn display_attack_text(&self, victim_entity_name: String, damage_dealt: u32) {
-        let mut output_str = String::new();
-        output_str.push_str(self.name.as_str());
-        output_str.push_str(" did ");
-        output_str.push_str(damage_dealt.to_string().as_str());
-        output_str.push_str(" damage to ");
-        output_str.push_str(victim_entity_name.as_str());
-
-        println!("{}", output_str.red());
+    /// Display the text for attacking another `Entity`.
+    ///
+    /// # Params
+    /// - `victim_entity_name` - The name of the `Entity` that is receiving the attack.
+    /// - `damage_dealt` - The amount of damage dealt to this `Entity`.
+    fn display_attack_text(
+        &self,
+        victim_entity_name: String,
+        damage_dealt: u32,
+        text_vec: &mut VecDeque<String>,
+    ) {
+        text_vec.push_back(format!(
+            "{} did {} damage to {}",
+            self.name,
+            damage_dealt.to_string(),
+            victim_entity_name
+        ));
     }
 
     /// Create the enemy list for the game
@@ -87,7 +110,6 @@ impl Enemy {
 
 //entity implementation for enemy
 impl Entity for Enemy {
-    ///Make the Enemy take damage
     fn take_damage(&mut self, amount: u32) -> u32 {
         let damage_taken = self.stats.calc_damage_taken(amount);
 
@@ -100,12 +122,10 @@ impl Entity for Enemy {
         damage_taken
     }
 
-    ///Heal the Enemy
     fn heal(&mut self, amount: u32) {
         self.health += amount;
     }
 
-    ///Makes the Enemy use mana
     fn use_mana(&mut self, amount: u32) {
         if amount > self.mana {
             self.mana = 0;
@@ -114,40 +134,26 @@ impl Entity for Enemy {
         }
     }
 
-    ///Gets the speed of the Enemy
     fn speed(&self) -> u32 {
         self.stats.get_speed()
     }
 
-    ///Checks to see if the Enemy is dead
     fn is_dead(&self) -> bool {
         self.health == 0
     }
 
-    ///Checks to see if the Enemy has gone yet
     fn gone_this_turn(&self) -> bool {
         self.has_gone
     }
 
-    ///The Enemy makes a choice as to what type of move it wants to do this turn
-    /// FUTURE: implement AI for this
+    // The Enemy makes a choice as to what type of move it wants to do this turn
+    // FUTURE: implement AI for this
     fn get_turn_type(&mut self) -> Option<MoveType> {
         Some(MoveType::AttackMove)
     }
 
     fn get_random_attack_dmg(&self) -> u32 {
         self.stats.generate_random_attack_dmg()
-    }
-
-    ///Print the Enemy info
-    fn print_info(&self) {
-        println!(
-            "{}:\n\t{}{} / {}",
-            self.name,
-            "Health: ".green(),
-            self.health,
-            self.max_health
-        );
     }
 
     fn name(&self) -> String {
@@ -170,7 +176,7 @@ impl Entity for Enemy {
         self.stats.stop_defending()
     }
 
-    fn tick_statuses(&mut self) {
+    fn tick_statuses(&mut self, text_vec: &mut VecDeque<String>) {
         let mut indicies_to_remove: Vec<usize> = Vec::new();
 
         for i in 0..self.statuses.len() {
@@ -184,25 +190,20 @@ impl Entity for Enemy {
             }
 
             if self.statuses[i].is_healing() {
-                // cursed println for text coloring
-                println!(
-                    "{} {} {} {} {}",
-                    self.name.red(),
-                    "healed".green(),
-                    amount.to_string().as_str().on_green(),
-                    "health from".green(),
-                    self.statuses[i].name().on_blue().black()
-                );
+                text_vec.push_back(format!(
+                    "{} healed {} health from {}!",
+                    self.name,
+                    amount.to_string().as_str(),
+                    self.statuses[i].name()
+                ));
                 self.heal(amount);
             } else {
-                println!(
-                    "{} {} {} {} {}",
-                    self.name.red(),
-                    "took".red(),
-                    amount.to_string().as_str().on_red(),
-                    "damage from".red(),
-                    self.statuses[i].name().on_blue().black()
-                );
+                text_vec.push_back(format!(
+                    "{} took {} damage from {}!",
+                    self.name,
+                    amount.to_string().as_str(),
+                    self.statuses[i].name()
+                ));
                 self.take_damage(amount);
             }
 
@@ -217,20 +218,43 @@ impl Entity for Enemy {
         }
     }
 
-    fn apply_status(&mut self, status: &Status) {
-        println!("{} appled to {}", status.name(), self.name());
+    fn apply_status(&mut self, status: &Status, text_vec: &mut VecDeque<String>) {
+        text_vec.push_back(format!("{} applied to {}", status.name(), self.name()));
         self.statuses.push(status.clone());
     }
 
-    fn attack_move(&self, target: &mut dyn Entity) -> bool {
+    fn attack_move(&mut self, target: &mut dyn Entity, text_vec: &mut VecDeque<String>) -> bool {
+        if self.has_gone {
+            return true; // has gone, error
+        }
         // attack the player with a random amount of damage
         let random_damage = self.get_random_attack_dmg();
 
         let damage_dealt = self.attack_entity(random_damage, target);
         // display the text for an attack
-        self.display_attack_text(target.name(), damage_dealt);
+        self.display_attack_text(target.name(), damage_dealt, text_vec);
+
+        // the enemy has gone
+        self.has_gone = true;
 
         // no error
         false
+    }
+
+    fn has_gone(&self) -> bool {
+        self.has_gone.clone()
+    }
+
+    fn health(&self) -> u32 {
+        self.health.clone()
+    }
+
+    fn max_health(&self) -> u32 {
+        self.max_health.clone()
+    }
+
+    fn allow_move(&mut self) {
+        // we can move again
+        self.has_gone = false;
     }
 }
