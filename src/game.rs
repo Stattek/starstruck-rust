@@ -603,7 +603,7 @@ impl GameState {
         let current_keys_hint = {
             match self.current_screen {
                 CurrentScreen::Main => Span::styled(
-                    "(1) Attack, (2) Magic, (3) Defend (q) to quit",
+                    "(1) Attack, (2) Magic, (3) Defend (q) quit",
                     Style::default().fg(Color::Red),
                 ),
                 CurrentScreen::LevelingUp => Span::styled(
@@ -611,7 +611,7 @@ impl GameState {
                     Style::default().fg(Color::Blue),
                 ),
                 CurrentScreen::Magic => Span::styled(
-                    "(↑↓) Change choice, (enter) Select choice",
+                    "(↑↓) Change choice, (enter) Select choice, (q) Go back",
                     Style::default().fg(Color::Blue),
                 ),
                 CurrentScreen::Warning => Span::styled(
