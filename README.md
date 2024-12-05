@@ -29,3 +29,12 @@
 
 ## TUI TODO:
 - Would be awesome to have EarthBound-like backgrounds in the TUI.
+
+## Building
+Starstruck can be built and run with the following commands.
+
+```sh
+cargo build
+cargo run
+```
+
