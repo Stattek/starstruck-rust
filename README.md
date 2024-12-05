@@ -5,6 +5,8 @@
 - This is a re-envisioning of that game but in Rust. Hopefully with some new features, as well.
 
 ## Building
+Starstruck requires installing Rust to build and run, found here: <https://www.rust-lang.org/>.
+
 Starstruck can be built and run with the following commands.
 
 ```sh
