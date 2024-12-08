@@ -218,6 +218,16 @@ impl Move {
         self.applied_status.clone()
     }
 
+    pub fn damage_type(move_type: MoveType) -> String {
+        // if a move doesn't do damage, give back nothing
+        let default_val = String::from("");
+        match move_type {
+            MoveType::AttackMove => String::from("physical"),
+            MoveType::MagicMove => String::from("magic"),
+            MoveType::DefendMove => default_val,
+        }
+    }
+
     /// Creates a `Move` list for the game
     ///
     /// # Returns
