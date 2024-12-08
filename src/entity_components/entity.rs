@@ -114,6 +114,8 @@ pub trait Entity {
     /// - `true` if the move was done, `false` if the move was not done (in case the move was canceled).
     fn attack_move(&mut self, target: &mut dyn Entity, text_vec: &mut VecDeque<String>) -> bool;
 
+    fn defend_move(&mut self, text_vec: &mut VecDeque<String>) -> bool;
+
     /// Returns if the entity has gone this turn yet.
     fn has_gone(&self) -> bool;
 

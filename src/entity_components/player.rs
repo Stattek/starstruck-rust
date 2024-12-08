@@ -117,11 +117,13 @@ impl Player {
         &self,
         victim_entity_name: String,
         damage_dealt: u32,
+        damage_type: String,
         text_vec: &mut VecDeque<String>,
     ) {
         text_vec.push_back(format!(
-            "You did {} damage to {}",
+            "You did {} {} damage to {}",
             damage_dealt.to_string(),
+            damage_type,
             victim_entity_name
         ));
     }
@@ -148,7 +150,12 @@ impl Player {
         // use the mana from this move
         self.use_mana(the_move.cost());
         // display the damage that was dealt
-        self.display_attack_text(target.name(), damage_dealt, text_vec);
+        self.display_attack_text(
+            target.name(),
+            damage_dealt,
+            Move::damage_type(MoveType::MagicMove),
+            text_vec,
+        );
 
         // roll for random chance to apply status if it exists
         if the_move.roll_status_chance() {
@@ -157,23 +164,6 @@ impl Player {
 
         // the player has gone
         self.has_gone = true;
-
-        // no error
-        true
-    }
-
-    pub fn defend_move(&mut self, text_vec: &mut VecDeque<String>) -> bool {
-        if self.has_gone {
-            return false;
-        }
-        self.start_defending();
-
-        // tell player that they started defending
-        let mut output_str = String::new();
-        output_str.push_str(self.name.as_str());
-        output_str.push_str(" began defending for 1 turn.");
-
-        text_vec.push_back(format!("{} began defending for 1 turn.", self.name));
 
         // no error
         true
@@ -331,10 +321,32 @@ impl Entity for Player {
 
         let damage_dealt = self.attack_entity(random_damage, target);
         // display the damage dealt
-        self.display_attack_text(target.name(), damage_dealt, text_vec);
+        self.display_attack_text(
+            target.name(),
+            damage_dealt,
+            Move::damage_type(MoveType::AttackMove),
+            text_vec,
+        );
 
         // the player has gone
         self.has_gone = true;
+
+        // no error
+        true
+    }
+
+    fn defend_move(&mut self, text_vec: &mut VecDeque<String>) -> bool {
+        if self.has_gone {
+            return false;
+        }
+        self.start_defending();
+
+        // tell player that they started defending
+        let mut output_str = String::new();
+        output_str.push_str(self.name.as_str());
+        output_str.push_str(" began defending for 1 turn.");
+
+        text_vec.push_back(format!("{} began defending for 1 turn.", self.name));
 
         // no error
         true

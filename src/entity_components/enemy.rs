@@ -1,6 +1,6 @@
 use std::collections::VecDeque;
 
-use crate::entity_components::{entity::Entity, moves::MoveType, stats::Stats};
+use crate::entity_components::{entity::Entity, moves::Move, moves::MoveType, stats::Stats};
 use ratatui::text;
 
 use super::status::Status;
@@ -75,12 +75,14 @@ impl Enemy {
         &self,
         victim_entity_name: String,
         damage_dealt: u32,
+        damage_type: String,
         text_vec: &mut VecDeque<String>,
     ) {
         text_vec.push_back(format!(
-            "{} did {} damage to {}",
+            "{} did {} {} damage to {}",
             self.name,
             damage_dealt.to_string(),
+            damage_type,
             victim_entity_name
         ));
     }
@@ -105,6 +107,41 @@ impl Enemy {
                 false,
             ),
         ]
+    }
+
+    /// The `Enemy` performs a magic attack move against another `Entity`.
+    ///
+    /// # Params
+    /// - `target` - The target of the attack.
+    /// - `text_vec` - The text `VecDeque` for displaying attack text.
+    ///
+    /// # Returns
+    /// - `true` on success, `false` otherwise.
+    pub fn magic_move(&mut self, target: &mut dyn Entity, text_vec: &mut VecDeque<String>) -> bool {
+        // check whether the user has already gone or if the move costs too much
+        if self.has_gone {
+            return false; // error
+        }
+
+        // TODO: make a new function to generate this?
+        let random_damage = self.magic_strength()
+            + (rand::random::<u32>() % (self.magic_strength() + self.magic_strength() / 2));
+
+        let damage_dealt = self.attack_entity(random_damage, target);
+
+        // display the damage that was dealt
+        self.display_attack_text(
+            target.name(),
+            damage_dealt,
+            Move::damage_type(MoveType::MagicMove),
+            text_vec,
+        );
+
+        // the enemy has gone
+        self.has_gone = true;
+
+        // no error
+        true
     }
 }
 
@@ -232,13 +269,35 @@ impl Entity for Enemy {
 
         let damage_dealt = self.attack_entity(random_damage, target);
         // display the text for an attack
-        self.display_attack_text(target.name(), damage_dealt, text_vec);
+        self.display_attack_text(
+            target.name(),
+            damage_dealt,
+            Move::damage_type(MoveType::AttackMove),
+            text_vec,
+        );
 
         // the enemy has gone
         self.has_gone = true;
 
         // no error
         false
+    }
+
+    fn defend_move(&mut self, text_vec: &mut VecDeque<String>) -> bool {
+        if self.has_gone {
+            return false;
+        }
+        self.start_defending();
+
+        // tell player that they started defending
+        let mut output_str = String::new();
+        output_str.push_str(self.name.as_str());
+        output_str.push_str(" began defending for 1 turn.");
+
+        text_vec.push_back(format!("{} began defending for 1 turn.", self.name));
+
+        // no error
+        true
     }
 
     fn has_gone(&self) -> bool {
