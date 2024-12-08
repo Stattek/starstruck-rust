@@ -1,5 +1,5 @@
 # Starstruck
-- Starstruck is a game that I first built in C++ when I was in 8th grade as part of a project for my english class (of all things).
+- Starstruck is a game that I first created in C++ when I was in 8th grade as part of a project for my English class (of all things).
     - It became pretty good for what I had known at the time, and I was happy with how it turned out, but it could have had more.
 
 - This is a re-envisioning of that game but in Rust. Hopefully with some new features, as well.
@@ -28,6 +28,9 @@ cargo run
 
 - Defending
     - Can currently defend without taking up a turn. This needs to be fixed, but it's kinda fun.
+- Randomness
+    - For balance, maybe make it so strength has no randomness while magic does. This would give the player the choice of potentially higher damage vs. consistent damage with strength.
+    - Don't make magic so random that it's unviable and too much of a gamble. Find a happy medium.
 
 ## TUI TODO:
 - Would be awesome to have EarthBound-like backgrounds in the TUI.
