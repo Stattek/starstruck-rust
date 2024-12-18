@@ -462,15 +462,14 @@ impl GameState {
             ])
             .split(frame.area());
 
-        /* we render the Main screen first so it's below the popup */
+        /* we render the Main screen first so it's below any popups */
 
-        // Create the title of the program using a Paragraph widget (which is used to display only text)
-        let title_block = Block::default()
+        // Create the logo of the program
+        let logo_block = Block::default()
             .borders(Borders::ALL)
             .style(Style::default().fg(Color::Magenta).bg(Color::Black));
 
-        // create a paragraph widget with text styled green
-        let title = Paragraph::new(Text::styled(
+        let logo = Paragraph::new(Text::styled(
             r#" ___ _               _               _   
 / __| |_ __ _ _ _ __| |_ _ _ _  _ __| |__
 \__ \  _/ _` | '_(_-<  _| '_| || / _| / /
@@ -478,17 +477,18 @@ impl GameState {
             Style::default().fg(Color::Magenta),
         ))
         .centered()
-        .block(title_block); // tells it that we want to be part of the title_block
+        .block(logo_block); // tells it that we want to be part of the logo_block
 
-        // now we render it
-        frame.render_widget(title, chunks[0]);
+        // render the logo
+        frame.render_widget(logo, chunks[0]);
 
-        /* render the enemy and player health */
+        /* render the enemy and player information */
         let game_info_chunks = Layout::default()
             .direction(Direction::Horizontal)
             .constraints([Constraint::Percentage(50), Constraint::Percentage(50)])
             .split(chunks[1]);
 
+        /* player info */
         let player_info_block = Block::default()
             .borders(Borders::ALL)
             .style(Style::default().fg(Color::Blue).bg(Color::Black));
@@ -531,6 +531,7 @@ impl GameState {
 
         frame.render_widget(player_ui_list, game_info_chunks[0]);
 
+        /* enemy info */
         let enemy_info_block = Block::new()
             .borders(Borders::ALL)
             .style(Style::default().fg(Color::Red).bg(Color::Black));
