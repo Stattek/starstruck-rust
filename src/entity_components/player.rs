@@ -33,6 +33,27 @@ pub enum LevelUpType {
     Health,
 }
 
+impl Default for Player {
+    fn default() -> Self {
+        // start with this mana and hp
+        let stats = Stats::default();
+        let starting_health = stats.calculate_max_health();
+        let starting_mana = stats.calculate_max_mana();
+        Self {
+            name: String::from(DEFAULT_NAME),
+            health: starting_health,
+            max_health: starting_health,
+            mana: starting_mana,
+            max_mana: starting_mana,
+            stats,
+            level: DEFAULT_PLAYER_LEVEL,
+            xp: DEFAULT_PLAYER_XP,
+            has_gone: DEFAULT_HAS_GONE_STATE,
+            statuses: Vec::new(), // start with no statuses
+        }
+    }
+}
+
 impl Player {
     pub fn new(name: String, stats: Stats, level: u32, xp: u32, has_gone: bool) -> Self {
         // start with this mana and hp
@@ -48,25 +69,6 @@ impl Player {
             level,
             xp,
             has_gone,
-            statuses: Vec::new(), // start with no statuses
-        }
-    }
-
-    pub fn default() -> Self {
-        // start with this mana and hp
-        let stats = Stats::default();
-        let starting_health = stats.calculate_max_health();
-        let starting_mana = stats.calculate_max_mana();
-        Self {
-            name: String::from(DEFAULT_NAME),
-            health: starting_health,
-            max_health: starting_health,
-            mana: starting_mana,
-            max_mana: starting_mana,
-            stats,
-            level: DEFAULT_PLAYER_LEVEL,
-            xp: DEFAULT_PLAYER_XP,
-            has_gone: DEFAULT_HAS_GONE_STATE,
             statuses: Vec::new(), // start with no statuses
         }
     }

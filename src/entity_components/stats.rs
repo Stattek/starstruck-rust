@@ -14,6 +14,21 @@ pub struct Stats {
     is_defending: bool, // if the entity is defending (this value is here so we can change the other stats)
 }
 
+impl Default for Stats {
+    /// Create a default Stats object
+    fn default() -> Self {
+        Self {
+            health: 10,
+            mana: 10,
+            speed: 10,
+            strength: 10,
+            magic_strength: 10,
+            defense: 0,
+            is_defending: false,
+        }
+    }
+}
+
 impl Stats {
     ///Creates a new Stats object
     pub fn new(
@@ -32,19 +47,6 @@ impl Stats {
             magic_strength,
             defense,
             is_defending: false, // always start off not defending
-        }
-    }
-
-    /// Create a default Stats object
-    pub fn default() -> Self {
-        Self {
-            health: 10,
-            mana: 10,
-            speed: 10,
-            strength: 10,
-            magic_strength: 10,
-            defense: 0,
-            is_defending: false,
         }
     }
 
