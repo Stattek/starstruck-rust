@@ -1,6 +1,11 @@
 use std::collections::VecDeque;
 
 use rand::random;
+use ratatui::{
+    style::{Color, Style},
+    text::{Line, Span},
+    widgets::ListItem,
+};
 
 use crate::entity_components::{entity::Entity, moves::Move, moves::MoveType, stats::Stats};
 
@@ -20,9 +25,10 @@ pub struct Enemy {
     level: u32,
     has_gone: bool,
     statuses: Vec<Status>,
-    next_moves: Vec<MoveType>,
+    move_set: Vec<MoveType>,
 }
 
+const NUM_MOVES_TO_ADD: u32 = 4;
 const BASE_XP: u32 = 20; // the base xp dropped by an enemy
 
 impl Enemy {
@@ -45,8 +51,8 @@ impl Enemy {
             stats,
             level,
             has_gone,
-            statuses: Vec::new(),   // start with no statuses,
-            next_moves: Vec::new(), // empty starting vector for the moves list
+            statuses: Vec::new(), // start with no statuses,
+            move_set: Enemy::get_rand_move_set(NUM_MOVES_TO_ADD), // initialize with a random set of moves
         }
     }
 
@@ -149,14 +155,20 @@ impl Enemy {
         true
     }
 
-    /// Generates the list of next moves for the `Enemy` to perform. Adds these new moves to
-    /// the end of the `next_moves` Vec.
+    /// Generates the list of next moves for the `Enemy` to perform. Returns a `Vec`
+    /// of these moves.
     ///
     /// # Params
     /// - `num_moves` - The number of moves to generate.
-    fn generate_next_moves(&mut self, num_moves: u32) {
+    ///
+    /// # Returns
+    /// - A `Vec` of all the next moves for the `Enemy` to perform.
+    fn get_rand_move_set(num_moves: u32) -> Vec<MoveType> {
+        let mut output = vec![];
         for _ in 0..num_moves {
             let rand_num = random::<u32>() % MoveType::NumMoveTypes as u32;
+
+            // doesn't really matter what order these are in or numbers used, just that they are here
             let move_type = match rand_num {
                 0 => MoveType::AttackMove,
                 1 => MoveType::MagicMove,
@@ -166,8 +178,48 @@ impl Enemy {
                 }
             };
 
-            self.next_moves.push(move_type);
+            output.push(move_type);
         }
+
+        output
+    }
+
+    /// Gets a `ListItem` from all of the possible moves that this `Enemy` can perform.
+    /// NOTE: For use with a Ratatui UI function.
+    ///
+    /// # Returns
+    /// - The `ListItem`representing the moves that the `Enemy` can perform.
+    pub fn get_move_set_listitem(&self) -> ListItem {
+        let mut move_spans = vec![];
+        move_spans.push(Span::styled(
+            "    Move Set: ",
+            Style::default().fg(Color::Cyan),
+        ));
+
+        let move_set_iter = self.move_set.iter().rev();
+        for move_type in move_set_iter {
+            let temp = match move_type {
+                MoveType::AttackMove => {
+                    Span::styled("A", Style::default().bg(Color::Red).fg(Color::White))
+                }
+                MoveType::MagicMove => {
+                    Span::styled("M", Style::default().bg(Color::Blue).fg(Color::White))
+                }
+                MoveType::DefendMove => {
+                    Span::styled("D", Style::default().bg(Color::White).fg(Color::Black))
+                }
+                MoveType::NumMoveTypes => {
+                    panic!("Cannot get next move for listitem")
+                }
+            };
+
+            move_spans.push(temp);
+        }
+        // combine all of the spans into a line
+        let line = Line::from(move_spans);
+
+        // then return the final ListItem
+        ListItem::from(line)
     }
 }
 
@@ -209,14 +261,12 @@ impl Entity for Enemy {
     }
 
     // The Enemy makes a choice as to what type of move it wants to do this turn
-    // FUTURE: implement AI for this
     fn get_turn_type(&mut self) -> Option<MoveType> {
-        static NUM_MOVES_TO_ADD: u32 = 4;
-        if self.next_moves.is_empty() {
+        if self.move_set.is_empty() {
             // generate a new list of moves
-            self.generate_next_moves(NUM_MOVES_TO_ADD);
+            self.move_set = Enemy::get_rand_move_set(NUM_MOVES_TO_ADD);
         }
-        self.next_moves.pop()
+        self.move_set.pop()
     }
 
     fn get_random_attack_dmg(&self) -> u32 {

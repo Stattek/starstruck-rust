@@ -333,7 +333,7 @@ impl GameState {
 
                 MoveType::DefendMove => self.player.defend_move(&mut self.attack_text),
 
-                _ => {
+                MoveType::NumMoveTypes => {
                     panic!("Invalid move type chosen by Player");
                 }
             };
@@ -364,7 +364,7 @@ impl GameState {
                     MoveType::DefendMove => {
                         self.enemy.defend_move(&mut self.attack_text);
                     }
-                    _ => {
+                    MoveType::NumMoveTypes => {
                         panic!("Invalid Enemy move type chosen");
                     }
                 }
@@ -548,6 +548,7 @@ impl GameState {
                 ),
                 Style::default().fg(Color::Green),
             )),
+            self.enemy.get_move_set_listitem(),
         ]);
         let enemy_ui_list = List::new(enemy_info_vec).block(enemy_info_block);
 
