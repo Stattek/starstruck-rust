@@ -1,22 +1,16 @@
 use std::collections::VecDeque;
 //simple turn-based game logic
-use std::{error::Error, io};
+use std::io;
 
 use crate::entity_components::enemy::Enemy;
-use crate::entity_components::moves::{ElementType, Move, MoveType};
+use crate::entity_components::moves::{Move, MoveType};
 use crate::entity_components::status::Status;
 use crate::entity_components::{entity::Entity, player::LevelUpType, player::Player, stats::Stats};
-use colored::Colorize;
 use rand::random;
-use ratatui::style::Styled;
-use ratatui::widgets::{BorderType, ListState, StatefulWidget};
+use ratatui::widgets::{BorderType, ListState};
 use ratatui::{
-    backend::{Backend, CrosstermBackend},
-    crossterm::{
-        event::{self, DisableMouseCapture, EnableMouseCapture, Event, KeyCode, KeyEventKind},
-        execute,
-        terminal::{disable_raw_mode, enable_raw_mode, EnterAlternateScreen, LeaveAlternateScreen},
-    },
+    backend::Backend,
+    crossterm::event::{self, Event, KeyCode},
     layout::{Constraint, Direction, Layout, Rect},
     style::{Color, Style},
     text::{Line, Span, Text},
@@ -362,10 +356,6 @@ impl GameState {
 
                     MoveType::MagicMove => {}
                     MoveType::DefendMove => {}
-                    _ => {
-                        // we should never reach this unless something has gone wrong
-                        panic!("Invalid move type");
-                    }
                 }
             }
         }
