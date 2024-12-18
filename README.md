@@ -32,6 +32,7 @@ cargo run
     - For balance, maybe make it so strength has no randomness while magic does. This would give the player the choice of potentially higher damage vs. consistent damage with strength.
     - Don't make magic so random that it's unviable and too much of a gamble. Find a happy medium.
 
+- BUG: When player (and likely an enemy as well) defends and takes enough damage to die, it will live with 0 health.
+
 ## TUI TODO:
 - Would be awesome to have EarthBound-like backgrounds in the TUI.
-
