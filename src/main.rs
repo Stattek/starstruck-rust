@@ -18,8 +18,8 @@ fn main() -> Result<(), Box<dyn Error>> {
     the_game.game_loop(&mut terminal)?;
 
     // undo changes made to the user's terminal to exit
-    // NOTE: if an application exits without running this closing biolerplate, the terminal will act very strange,
-    // so we should handle our error in a way that we can call this last piece of code
+    // NOTE: in older versions, if an application exited without running this closing biolerplate,
+    // the terminal would act very strange.
     ratatui::restore();
 
     Ok(())
