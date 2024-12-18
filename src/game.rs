@@ -62,7 +62,7 @@ impl GameState {
             the_enemy = temp_enemy;
         } else {
             //otherwise, create a new temporary one until we create a random one
-            the_enemy = create_temp_monster();
+            the_enemy = create_temp_enemy();
         }
 
         let status_list = Status::create_status_list();
@@ -172,7 +172,6 @@ impl GameState {
                         _ => {}
                     },
 
-                    // TODO: make screen for choosing magic skill
                     CurrentScreen::Exiting => match key.code {
                         KeyCode::Char('y') => {
                             break;
@@ -333,6 +332,10 @@ impl GameState {
                 }
 
                 MoveType::DefendMove => self.player.defend_move(&mut self.attack_text),
+
+                _ => {
+                    panic!("Invalid move type chosen by Player");
+                }
             };
         }
 
@@ -354,8 +357,16 @@ impl GameState {
                             .attack_move(&mut self.player, &mut self.attack_text);
                     }
 
-                    MoveType::MagicMove => {}
-                    MoveType::DefendMove => {}
+                    MoveType::MagicMove => {
+                        self.enemy
+                            .magic_move(&mut self.player, &mut self.attack_text);
+                    }
+                    MoveType::DefendMove => {
+                        self.enemy.defend_move(&mut self.attack_text);
+                    }
+                    _ => {
+                        panic!("Invalid Enemy move type chosen");
+                    }
                 }
             }
         }
@@ -757,12 +768,12 @@ impl GameState {
         }
     }
 
-    /// helper function to create a centered rect using up certain percentage of the available rect `r`
+    /// helper function to create a centered rect using up certain percentage of the available rect `r`.
     ///
     /// # Params
-    /// - `percent_x` - The percentage of the screen the `Rect` will take up along the x-axis
-    /// - `percent_y` - The percentage of the screen the `Rect` will take up along the y-axis
-    /// - `r` - The `Rect` of the terminal for finding the available space
+    /// - `percent_x` - The percentage of the screen the `Rect` will take up along the x-axis.
+    /// - `percent_y` - The percentage of the screen the `Rect` will take up along the y-axis.
+    /// - `r` - The `Rect` of the terminal we find the available space from.
     fn centered_rect(&self, percent_x: u16, percent_y: u16, r: Rect) -> Rect {
         // Cut the given rectangle into three vertical pieces
         let popup_layout = Layout::default()
@@ -787,7 +798,7 @@ impl GameState {
 }
 
 // TODO: do we really need this??
-fn create_temp_monster() -> Enemy {
+fn create_temp_enemy() -> Enemy {
     let random_health_stat: u32 = (random::<u32>() % 10) + 1;
     Enemy::new(
         String::from("test_enemy"),

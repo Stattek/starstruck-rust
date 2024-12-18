@@ -63,6 +63,8 @@ pub trait Entity {
     ///
     /// # Returns
     /// - `true` if the `Entity` has gone this turn, `false` otherwise.
+    /// 
+    /// FIXME: remove this function
     fn gone_this_turn(&self) -> bool;
 
     /// Makes this Entity do its turn and make a choice.

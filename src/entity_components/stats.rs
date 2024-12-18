@@ -50,13 +50,13 @@ impl Stats {
 
     ///Generates the health of the entity
     pub fn calculate_max_health(&self) -> u32 {
-        //TODO: change this with
+        //TODO: change this for balance
         (self.health as f64 * 5.5) as u32
     }
 
     ///Generates the mana of the entity
     pub fn calculate_max_mana(&self) -> u32 {
-        //TODO: change this
+        //TODO: change this for balance
         (self.mana as f64 * 2.5) as u32
     }
 
