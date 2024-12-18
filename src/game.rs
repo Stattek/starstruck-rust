@@ -96,7 +96,7 @@ impl GameState {
             // each loop is a tick, with the player or enemy able to try attacking.
             // but they can only both go again once both of them have gone
 
-            terminal.draw(|f| self.ui(f))?;
+            terminal.draw(|frame| self.ui(frame))?;
 
             if let Event::Key(key) = event::read()? {
                 if key.kind == event::KeyEventKind::Release {
