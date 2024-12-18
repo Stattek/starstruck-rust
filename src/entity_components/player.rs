@@ -232,7 +232,7 @@ impl Entity for Player {
 
     ///Player chooses attack type, and it is returned.
     ///
-    /// # NOTE: This method is now defunct
+    /// # FIXME: This method is now defunct
     fn get_turn_type(&mut self) -> Option<MoveType> {
         panic!()
     }
@@ -347,6 +347,9 @@ impl Entity for Player {
         output_str.push_str(" began defending for 1 turn.");
 
         text_vec.push_back(format!("{} began defending for 1 turn.", self.name));
+
+        // the player has gone
+        self.has_gone = true;
 
         // no error
         true

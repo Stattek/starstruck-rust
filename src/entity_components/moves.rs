@@ -11,10 +11,12 @@ pub enum ElementType {
     None,
 }
 
+#[derive(Clone)]
 pub enum MoveType {
     AttackMove,
     MagicMove,
     DefendMove,
+    NumMoveTypes,
 }
 
 /// Struct for representing a move in the game.
@@ -225,6 +227,7 @@ impl Move {
             MoveType::AttackMove => String::from("physical"),
             MoveType::MagicMove => String::from("magic"),
             MoveType::DefendMove => default_val,
+            _ => panic!("Cannot get a damage type from invalid MoveType"),
         }
     }
 
