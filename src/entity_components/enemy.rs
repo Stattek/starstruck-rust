@@ -269,7 +269,7 @@ impl Entity for Enemy {
         let output = self.move_set.pop();
 
         if self.move_set.is_empty() {
-            // generate a new list of moves if popping this
+            // generate a new list of moves if popping this emptied the vec
             self.move_set = Enemy::get_rand_move_set(NUM_MOVES_TO_ADD);
         }
 
