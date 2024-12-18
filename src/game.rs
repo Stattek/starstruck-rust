@@ -471,10 +471,10 @@ impl GameState {
 
         // create a paragraph widget with text styled green
         let title = Paragraph::new(Text::styled(
-            " ___ _               _               _   \n\
-/ __| |_ __ _ _ _ __| |_ _ _ _  _ __| |__\n\
-\\__ \\  _/ _` | '_(_-<  _| '_| || / _| / /\n\
-|___/\\__\\__,_|_| /__/\\__|_|  \\_,_\\__|_\\_\\",
+            r#" ___ _               _               _   
+/ __| |_ __ _ _ _ __| |_ _ _ _  _ __| |__
+\__ \  _/ _` | '_(_-<  _| '_| || / _| / /
+|___/\__\__,_|_| /__/\__|_|  \_,_\__|_\_\"#,
             Style::default().fg(Color::Magenta),
         ))
         .centered()
