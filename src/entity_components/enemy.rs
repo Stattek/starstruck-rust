@@ -266,7 +266,14 @@ impl Entity for Enemy {
             // generate a new list of moves
             self.move_set = Enemy::get_rand_move_set(NUM_MOVES_TO_ADD);
         }
-        self.move_set.pop()
+        let output = self.move_set.pop();
+
+        if self.move_set.is_empty() {
+            // generate a new list of moves if popping this
+            self.move_set = Enemy::get_rand_move_set(NUM_MOVES_TO_ADD);
+        }
+
+        output
     }
 
     fn get_random_attack_dmg(&self) -> u32 {
