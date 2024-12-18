@@ -1,7 +1,6 @@
 use std::collections::VecDeque;
 
 use crate::entity_components::{entity::Entity, moves::Move, moves::MoveType, stats::Stats};
-use ratatui::text;
 
 use super::status::Status;
 

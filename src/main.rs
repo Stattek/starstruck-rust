@@ -4,17 +4,12 @@ mod game;
 
 use std::{error::Error, io};
 
-use crate::game::{CurrentScreen, GameState};
-use entity_components::{
-    enemy::Enemy,
-    entity::Entity,
-    player::{Player, DEFAULT_HAS_GONE_STATE, DEFAULT_PLAYER_LEVEL, DEFAULT_PLAYER_XP},
-    stats::Stats,
-};
+use crate::entity_components::player::Player;
+use crate::game::GameState;
 use ratatui::{
-    backend::{Backend, CrosstermBackend},
+    backend::CrosstermBackend,
     crossterm::{
-        event::{self, DisableMouseCapture, EnableMouseCapture, Event, KeyCode, KeyEventKind},
+        event::{DisableMouseCapture, EnableMouseCapture},
         execute,
         terminal::{disable_raw_mode, enable_raw_mode, EnterAlternateScreen, LeaveAlternateScreen},
     },
