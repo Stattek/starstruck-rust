@@ -227,11 +227,6 @@ impl Entity for Player {
         self.health == 0
     }
 
-    ///Checks to see if the Player has gone this turn
-    fn gone_this_turn(&self) -> bool {
-        self.has_gone
-    }
-
     ///Player chooses attack type, and it is returned.
     ///
     /// # FIXME: This method is now defunct

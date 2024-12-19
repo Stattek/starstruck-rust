@@ -58,15 +58,6 @@ pub trait Entity {
     /// - `true` if the entity is dead, `false` otherwise.
     fn is_dead(&self) -> bool;
 
-    /// Checks to see if the entity has gone this turn.
-    /// For use when there are more than 2 entities in a fight.
-    ///
-    /// # Returns
-    /// - `true` if the `Entity` has gone this turn, `false` otherwise.
-    /// 
-    /// FIXME: remove this function
-    fn gone_this_turn(&self) -> bool;
-
     /// Makes this Entity do its turn and make a choice.
     ///
     /// # Returns
