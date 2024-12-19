@@ -117,7 +117,7 @@ impl Player {
     /// Displays attack text for the `Player` attacking another `Entity`.
     fn display_attack_text(
         &self,
-        victim_entity_name: String,
+        victim_entity_name: &String,
         damage_dealt: u32,
         damage_type: String,
         text_vec: &mut VecDeque<String>,
@@ -244,8 +244,8 @@ impl Entity for Player {
     }
 
     /// Get the name of the Player
-    fn name(&self) -> String {
-        self.name.clone()
+    fn name(&self) -> &String {
+        &self.name
     }
 
     /// Get the level of the Player

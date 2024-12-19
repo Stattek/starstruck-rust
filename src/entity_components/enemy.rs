@@ -83,7 +83,7 @@ impl Enemy {
     /// - `damage_dealt` - The amount of damage dealt to this `Entity`.
     fn display_attack_text(
         &self,
-        victim_entity_name: String,
+        victim_entity_name: &String,
         damage_dealt: u32,
         damage_type: String,
         text_vec: &mut VecDeque<String>,
@@ -280,8 +280,8 @@ impl Entity for Enemy {
         self.stats.generate_random_attack_dmg()
     }
 
-    fn name(&self) -> String {
-        self.name.clone()
+    fn name(&self) -> &String {
+        &self.name
     }
 
     fn level(&self) -> u32 {
@@ -391,15 +391,15 @@ impl Entity for Enemy {
     }
 
     fn has_gone(&self) -> bool {
-        self.has_gone.clone()
+        self.has_gone
     }
 
     fn health(&self) -> u32 {
-        self.health.clone()
+        self.health
     }
 
     fn max_health(&self) -> u32 {
-        self.max_health.clone()
+        self.max_health
     }
 
     fn allow_move(&mut self) {

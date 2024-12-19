@@ -269,7 +269,7 @@ impl GameState {
     /// all entities have gone.
     fn perform_entity_check(&mut self) {
         // end the turn if both entities have gone or if either one of the entities has died
-        if (self.player.has_gone() && self.enemy.has_gone()) || self.check_entities() {
+        if self.check_entities() || (self.player.has_gone() && self.enemy.has_gone()) {
             self.end_turn();
         }
     }
