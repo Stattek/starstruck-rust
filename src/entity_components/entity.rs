@@ -44,7 +44,7 @@ pub trait Entity {
     ///
     /// # Returns
     /// - The name of this entity.
-    fn name(&self) -> String;
+    fn name(&self) -> &String;
 
     /// Get the magic strength of the entity.
     ///
