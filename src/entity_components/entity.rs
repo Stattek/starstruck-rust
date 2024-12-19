@@ -58,12 +58,6 @@ pub trait Entity {
     /// - `true` if the entity is dead, `false` otherwise.
     fn is_dead(&self) -> bool;
 
-    /// Makes this Entity do its turn and make a choice.
-    ///
-    /// # Returns
-    /// - The `MoveType` selected by the `Entity`.
-    fn get_turn_type(&mut self) -> Option<MoveType>;
-
     /// Generate random attack damage from the Entity's stats
     ///
     /// # Returns
