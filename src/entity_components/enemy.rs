@@ -256,10 +256,6 @@ impl Entity for Enemy {
         self.health == 0
     }
 
-    fn gone_this_turn(&self) -> bool {
-        self.has_gone
-    }
-
     // The Enemy makes a choice as to what type of move it wants to do this turn
     fn get_turn_type(&mut self) -> Option<MoveType> {
         if self.move_set.is_empty() {
