@@ -221,6 +221,26 @@ impl Enemy {
         // then return the final ListItem
         ListItem::from(line)
     }
+
+    /// The Enemy makes a choice as to what type of move it wants to do this turn.
+    /// Chooses from its current `move_set`.
+    ///
+    /// # Returns
+    /// - `Option<MoveType>` with `Some(MoveType)` on success and `None` on failure.
+    pub fn get_turn_type(&mut self) -> Option<MoveType> {
+        if self.move_set.is_empty() {
+            // generate a new list of moves
+            self.move_set = Enemy::get_rand_move_set(NUM_MOVES_TO_ADD);
+        }
+        let output = self.move_set.pop();
+
+        if self.move_set.is_empty() {
+            // generate a new list of moves if popping this emptied the vec
+            self.move_set = Enemy::get_rand_move_set(NUM_MOVES_TO_ADD);
+        }
+
+        output
+    }
 }
 
 impl Entity for Enemy {
@@ -254,22 +274,6 @@ impl Entity for Enemy {
 
     fn is_dead(&self) -> bool {
         self.health == 0
-    }
-
-    // The Enemy makes a choice as to what type of move it wants to do this turn
-    fn get_turn_type(&mut self) -> Option<MoveType> {
-        if self.move_set.is_empty() {
-            // generate a new list of moves
-            self.move_set = Enemy::get_rand_move_set(NUM_MOVES_TO_ADD);
-        }
-        let output = self.move_set.pop();
-
-        if self.move_set.is_empty() {
-            // generate a new list of moves if popping this emptied the vec
-            self.move_set = Enemy::get_rand_move_set(NUM_MOVES_TO_ADD);
-        }
-
-        output
     }
 
     fn get_random_attack_dmg(&self) -> u32 {

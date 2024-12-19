@@ -227,13 +227,6 @@ impl Entity for Player {
         self.health == 0
     }
 
-    ///Player chooses attack type, and it is returned.
-    ///
-    /// # FIXME: This method is now defunct
-    fn get_turn_type(&mut self) -> Option<MoveType> {
-        panic!()
-    }
-
     fn get_random_attack_dmg(&self) -> u32 {
         self.stats.generate_random_attack_dmg()
     }
