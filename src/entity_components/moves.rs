@@ -31,6 +31,20 @@ pub struct Move {
     applied_status: Option<Status>,
 }
 
+impl Default for Move {
+    fn default() -> Self {
+        static DEFAULT_MOVE_NAME: &'static str = "DEFAULT_MOVE";
+        Self {
+            name: String::from(DEFAULT_MOVE_NAME),
+            base_amount: 0,
+            mana_cost: 0,
+            level_requirement: 0,
+            element: ElementType::None,
+            applied_status: None,
+        }
+    }
+}
+
 impl Move {
     pub const fn new(
         name: String,
@@ -50,17 +64,6 @@ impl Move {
         }
     }
 
-    fn default() -> Self {
-        Self {
-            name: String::from("DEFAULT_MOVE"),
-            base_amount: 1,
-            mana_cost: 1,
-            level_requirement: 1,
-            element: ElementType::None,
-            applied_status: None,
-        }
-    }
-
     /// Builder function for easily builing moves.
     /// Sets the name of the Move object and returns it.
     ///
@@ -69,7 +72,7 @@ impl Move {
     ///
     /// # Returns
     /// - The `Move` object.
-    fn with_name(mut self, name: String) -> Self {
+    pub fn with_name(mut self, name: String) -> Self {
         self.name = name;
         self
     }
@@ -82,7 +85,7 @@ impl Move {
     ///
     /// # Returns
     /// - The `Move` object.
-    fn with_base_amount(mut self, base_amount: u32) -> Self {
+    pub fn with_base_amount(mut self, base_amount: u32) -> Self {
         self.base_amount = base_amount;
         self
     }
@@ -95,7 +98,7 @@ impl Move {
     ///
     /// # Returns
     /// - The `Move` object.
-    fn with_mana_cost(mut self, mana_cost: u32) -> Self {
+    pub fn with_mana_cost(mut self, mana_cost: u32) -> Self {
         self.mana_cost = mana_cost;
         self
     }
@@ -108,7 +111,7 @@ impl Move {
     ///
     /// # Returns
     /// - The `Move` object.
-    fn with_level_requirement(mut self, level_requirement: u32) -> Self {
+    pub fn with_level_requirement(mut self, level_requirement: u32) -> Self {
         self.level_requirement = level_requirement;
         self
     }
@@ -121,7 +124,7 @@ impl Move {
     ///
     /// # Returns
     /// - The `Move` object.
-    fn with_element(mut self, element: ElementType) -> Self {
+    pub fn with_element(mut self, element: ElementType) -> Self {
         self.element = element;
         self
     }
@@ -134,7 +137,7 @@ impl Move {
     ///
     /// # Returns
     /// - The `Move` object.
-    fn with_applied_status(mut self, applied_status: Option<Status>) -> Self {
+    pub fn with_applied_status(mut self, applied_status: Option<Status>) -> Self {
         self.applied_status = applied_status;
         self
     }

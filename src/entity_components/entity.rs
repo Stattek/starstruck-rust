@@ -1,8 +1,5 @@
 use std::collections::VecDeque;
 
-///Represents the type of move that an entity is making
-use crate::entity_components::moves::MoveType;
-
 use super::status::Status;
 
 ///trait for entities
