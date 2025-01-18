@@ -1,5 +1,5 @@
 use std::collections::VecDeque;
-//simple turn-based game logic
+// simple turn-based game logic
 use std::io;
 
 use crate::entity_components::enemy::Enemy;
@@ -32,7 +32,7 @@ pub enum CurrentScreen {
     Exiting,
 }
 
-///Struct to hold the game state.
+/// Struct to hold the game state.
 pub struct GameState {
     player: Player,
     enemy: Enemy,
@@ -52,7 +52,8 @@ pub struct GameState {
 }
 
 impl GameState {
-    ///Create new GameState object
+    /// Create new GameState object with a player and an optional
+    /// enemy.
     pub fn new(player: Player, enemy: Option<Enemy>) -> Self {
         let is_playing = !player.is_dead();
         let the_enemy;
@@ -86,9 +87,9 @@ impl GameState {
         }
     }
 
-    ///the main game loop
+    /// the main game loop
     pub fn game_loop<B: Backend>(&mut self, terminal: &mut Terminal<B>) -> io::Result<()> {
-        //create a new random monster
+        // create a new random monster
         // TODO: this will cause issues if you want to start off with a specific enemy
         self.enemy = self.create_random_enemy();
 
